@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LeadManagement from "./LeadManagement";
 import ViewingSchedule from "./ViewingSchedule";
 import CalendarView from "./CalendarView";
+import ClientDatabase from "./ClientDatabase";
 
 const Dashboard = () => {
   return (
@@ -17,6 +18,7 @@ const Dashboard = () => {
           <TabsTrigger value="leads">Lead Management</TabsTrigger>
           <TabsTrigger value="viewings">Viewing Schedule</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="clients">Client Database</TabsTrigger>
         </TabsList>
         <TabsContent value="leads">
           <LeadManagement />
@@ -26,6 +28,9 @@ const Dashboard = () => {
         </TabsContent>
         <TabsContent value="calendar">
           <CalendarView />
+        </TabsContent>
+        <TabsContent value="clients">
+          <ClientDatabase />
         </TabsContent>
       </Tabs>
     </div>
