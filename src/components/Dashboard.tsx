@@ -4,6 +4,7 @@ import LeadManagement from "./LeadManagement";
 import ViewingSchedule from "./ViewingSchedule";
 import CalendarView from "./CalendarView";
 import ClientDatabase from "./ClientDatabase";
+import PropertyDatabase from "./PropertyDatabase";
 
 const Dashboard = () => {
   return (
@@ -19,6 +20,7 @@ const Dashboard = () => {
           <TabsTrigger value="viewings">Viewing Schedule</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="clients">Client Database</TabsTrigger>
+          <TabsTrigger value="properties">Property Database</TabsTrigger>
         </TabsList>
         <TabsContent value="leads">
           <LeadManagement />
@@ -31,6 +33,9 @@ const Dashboard = () => {
         </TabsContent>
         <TabsContent value="clients">
           <ClientDatabase />
+        </TabsContent>
+        <TabsContent value="properties">
+          <PropertyDatabase />
         </TabsContent>
       </Tabs>
     </div>
