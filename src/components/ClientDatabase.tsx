@@ -17,6 +17,7 @@ interface Client {
 
 const ClientDatabase = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clients, setClients] = useState<Client[]>([
     {
       id: 1,
@@ -108,7 +109,11 @@ const ClientDatabase = () => {
           </TableHeader>
           <TableBody>
             {filteredClients.map((client) => (
-              <TableRow key={client.id}>
+              <TableRow 
+                key={client.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => setSelectedClient(client)}
+              >
                 <TableCell className="font-medium">{client.name}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
@@ -128,6 +133,21 @@ const ClientDatabase = () => {
           </TableBody>
         </Table>
       </div>
+
+      {selectedClient && (
+        <LeadDetailsDialog
+          open={!!selectedClient}
+          onOpenChange={(open) => !open && setSelectedClient(null)}
+          lead={{
+            id: selectedClient.id,
+            name: selectedClient.name,
+            status: selectedClient.status,
+            phone: selectedClient.phone,
+            lastContact: selectedClient.lastContact,
+            propertyInterest: selectedClient.propertyInterest,
+          }}
+        />
+      )}
     </Card>
   );
 };

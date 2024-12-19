@@ -1,9 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Clock, MapPin, Phone } from "lucide-react";
+import { MapPin, Clock } from "lucide-react";
 import { useState } from "react";
 import AddContactDialog from "./AddContactDialog";
+import LeadDetailsDialog from "./LeadDetailsDialog";
+import PropertyDetailsDialog from "./PropertyDetailsDialog";
 
 interface Viewing {
   id: number;
@@ -12,9 +14,13 @@ interface Viewing {
   time: string;
   date: string;
   status: "confirmed" | "pending";
+  clientId: number;
+  propertyId: number;
 }
 
 const ViewingSchedule = () => {
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [viewings, setViewings] = useState<Viewing[]>([
     {
       id: 1,
@@ -23,6 +29,8 @@ const ViewingSchedule = () => {
       time: "10:00 AM",
       date: "2024-04-11",
       status: "confirmed",
+      clientId: 1,
+      propertyId: 1,
     },
     {
       id: 2,
@@ -31,14 +39,8 @@ const ViewingSchedule = () => {
       time: "2:30 PM",
       date: "2024-04-11",
       status: "pending",
-    },
-    {
-      id: 3,
-      clientName: "Michael Brown",
-      property: "789 Ocean Blvd",
-      time: "11:00 AM",
-      date: "2024-04-12",
-      status: "confirmed",
+      clientId: 2,
+      propertyId: 2,
     },
   ]);
 
@@ -54,13 +56,15 @@ const ViewingSchedule = () => {
   };
 
   const handleAddViewing = (contact: any) => {
-    const viewing: Viewing = {
+    const viewing = {
       id: viewings.length + 1,
       clientName: contact.name,
       property: contact.propertyInterest || "Property TBD",
       time: "Time TBD",
       date: new Date().toISOString().split("T")[0],
-      status: "pending",
+      status: "pending" as const,
+      clientId: contact.id || viewings.length + 1,
+      propertyId: 1, // Default property ID
     };
     setViewings([...viewings, viewing]);
   };
@@ -68,7 +72,7 @@ const ViewingSchedule = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Today's Schedule</h2>
+        <h2 className="text-xl font-semibold">Today's Viewings</h2>
         <AddContactDialog onAddContact={handleAddViewing} type="viewing" />
       </div>
 
@@ -77,8 +81,33 @@ const ViewingSchedule = () => {
           <Card key={viewing.id} className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-semibold">{viewing.clientName}</h3>
-                <div className="flex items-center text-secondary text-sm mt-1">
+                <h3 
+                  className="font-semibold cursor-pointer hover:text-primary"
+                  onClick={() => setSelectedClient({
+                    id: viewing.clientId,
+                    name: viewing.clientName,
+                    status: "warm",
+                    phone: "(555) 123-4567",
+                    lastContact: viewing.date,
+                    propertyInterest: viewing.property,
+                  })}
+                >
+                  {viewing.clientName}
+                </h3>
+                <div 
+                  className="flex items-center text-secondary text-sm mt-1 cursor-pointer hover:text-primary"
+                  onClick={() => setSelectedProperty({
+                    id: viewing.propertyId,
+                    address: viewing.property,
+                    price: 500000,
+                    type: "House",
+                    bedrooms: 3,
+                    bathrooms: 2,
+                    status: "available",
+                    sellerId: 1,
+                    interestedBuyers: [1, 2],
+                  })}
+                >
                   <MapPin className="h-4 w-4 mr-1" />
                   {viewing.property}
                 </div>
@@ -87,19 +116,34 @@ const ViewingSchedule = () => {
                   {viewing.time} - {viewing.date}
                 </div>
               </div>
-              <div className="flex flex-col items-end space-y-2">
-                <Badge className={getStatusColor(viewing.status)}>
-                  {viewing.status.toUpperCase()}
-                </Badge>
-                <Button variant="outline" size="sm">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Confirm
-                </Button>
-              </div>
+              <Badge className={getStatusColor(viewing.status)}>
+                {viewing.status.toUpperCase()}
+              </Badge>
             </div>
           </Card>
         ))}
       </div>
+
+      {selectedClient && (
+        <LeadDetailsDialog
+          open={!!selectedClient}
+          onOpenChange={(open) => !open && setSelectedClient(null)}
+          lead={selectedClient}
+        />
+      )}
+
+      {selectedProperty && (
+        <PropertyDetailsDialog
+          open={!!selectedProperty}
+          onOpenChange={(open) => !open && setSelectedProperty(null)}
+          property={selectedProperty}
+          seller={{
+            id: 1,
+            name: "John Doe",
+            phone: "+1 (555) 123-4567",
+          }}
+        />
+      )}
     </div>
   );
 };

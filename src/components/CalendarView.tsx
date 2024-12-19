@@ -15,6 +15,8 @@ interface Appointment {
 
 const CalendarView = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([
     {
       id: "1",
@@ -72,11 +74,33 @@ const CalendarView = () => {
               <Card key={apt.id} className="p-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium">{apt.title}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Client: {apt.client}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
+                    <h4 
+                      className="font-medium cursor-pointer hover:text-primary"
+                      onClick={() => setSelectedClient({
+                        id: parseInt(apt.id),
+                        name: apt.client,
+                        status: "warm",
+                        phone: "(555) 123-4567",
+                        lastContact: apt.date.toISOString().split('T')[0],
+                        propertyInterest: apt.property,
+                      })}
+                    >
+                      {apt.client}
+                    </h4>
+                    <p 
+                      className="text-sm text-muted-foreground cursor-pointer hover:text-primary"
+                      onClick={() => setSelectedProperty({
+                        id: parseInt(apt.id),
+                        address: apt.property,
+                        price: 500000,
+                        type: "House",
+                        bedrooms: 3,
+                        bathrooms: 2,
+                        status: "available",
+                        sellerId: 1,
+                        interestedBuyers: [1, 2],
+                      })}
+                    >
                       Property: {apt.property}
                     </p>
                   </div>
@@ -94,6 +118,27 @@ const CalendarView = () => {
           </div>
         </div>
       </div>
+
+      {selectedClient && (
+        <LeadDetailsDialog
+          open={!!selectedClient}
+          onOpenChange={(open) => !open && setSelectedClient(null)}
+          lead={selectedClient}
+        />
+      )}
+
+      {selectedProperty && (
+        <PropertyDetailsDialog
+          open={!!selectedProperty}
+          onOpenChange={(open) => !open && setSelectedProperty(null)}
+          property={selectedProperty}
+          seller={{
+            id: 1,
+            name: "John Doe",
+            phone: "+1 (555) 123-4567",
+          }}
+        />
+      )}
     </Card>
   );
 };
