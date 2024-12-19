@@ -128,7 +128,14 @@ const ViewingSchedule = () => {
         <LeadDetailsDialog
           open={!!selectedClient}
           onOpenChange={(open) => !open && setSelectedClient(null)}
-          lead={selectedClient}
+          lead={{
+            id: selectedClient.id || Math.random(),
+            name: selectedClient.name,
+            status: "warm",
+            phone: selectedClient.phone,
+            lastContact: new Date().toISOString().split('T')[0],
+            propertyInterest: selectedClient.property || "Not specified",
+          }}
         />
       )}
 

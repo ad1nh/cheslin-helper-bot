@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import AddContactDialog from "./AddContactDialog";
+import LeadDetailsDialog from "./LeadDetailsDialog";
 
 interface Client {
   id: number;
@@ -153,3 +154,4 @@ const ClientDatabase = () => {
 };
 
 export default ClientDatabase;
+

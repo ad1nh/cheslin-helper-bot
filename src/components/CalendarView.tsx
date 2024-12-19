@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/components/ui/use-toast";
 import { Calendar as CalendarIcon } from "lucide-react";
+import LeadDetailsDialog from "./LeadDetailsDialog";
+import PropertyDetailsDialog from "./PropertyDetailsDialog";
 
 interface Appointment {
   id: string;
