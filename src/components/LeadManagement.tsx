@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PhoneCall, Calendar, User } from "lucide-react";
 import { useState } from "react";
 import AddContactDialog from "./AddContactDialog";
+import LeadDetailsDialog from "./LeadDetailsDialog";
 
 interface Lead {
   id: number;
@@ -41,6 +42,8 @@ const LeadManagement = () => {
       propertyInterest: "Luxury condo with ocean view",
     },
   ]);
+
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -84,7 +87,11 @@ const LeadManagement = () => {
 
       <div className="space-y-4">
         {leads.map((lead) => (
-          <Card key={lead.id} className="p-4">
+          <Card 
+            key={lead.id} 
+            className="p-4 cursor-pointer hover:bg-muted/50"
+            onClick={() => setSelectedLead(lead)}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <User className="h-10 w-10 text-primary" />
@@ -110,6 +117,14 @@ const LeadManagement = () => {
           </Card>
         ))}
       </div>
+
+      {selectedLead && (
+        <LeadDetailsDialog
+          open={!!selectedLead}
+          onOpenChange={(open) => !open && setSelectedLead(null)}
+          lead={selectedLead}
+        />
+      )}
     </div>
   );
 };

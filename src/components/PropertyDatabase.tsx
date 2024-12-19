@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import PropertyDetailsDialog from "./PropertyDetailsDialog";
 
 interface Property {
   id: number;
@@ -30,6 +31,7 @@ interface Seller {
 const PropertyDatabase = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const { toast } = useToast();
 
   const [properties, setProperties] = useState<Property[]>([
@@ -177,7 +179,11 @@ const PropertyDatabase = () => {
           </TableHeader>
           <TableBody>
             {filteredProperties.map((property) => (
-              <TableRow key={property.id}>
+              <TableRow 
+                key={property.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={() => setSelectedProperty(property)}
+              >
                 <TableCell className="font-medium">{property.address}</TableCell>
                 <TableCell>
                   <div className="space-y-1">
@@ -202,6 +208,15 @@ const PropertyDatabase = () => {
           </TableBody>
         </Table>
       </div>
+
+      {selectedProperty && (
+        <PropertyDetailsDialog
+          open={!!selectedProperty}
+          onOpenChange={(open) => !open && setSelectedProperty(null)}
+          property={selectedProperty}
+          seller={sellers.find(s => s.id === selectedProperty.sellerId) || sellers[0]}
+        />
+      )}
     </Card>
   );
 };
