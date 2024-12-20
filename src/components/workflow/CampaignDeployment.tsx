@@ -115,11 +115,35 @@ const CampaignDeployment = ({
               const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
               console.log("Analysis result:", analysisResult);
               
-              if (analysisResult.answers?.[0]?.[0]?.toLowerCase() === "yes" && 
-                  analysisResult.answers[0][1]) {
-                const appointmentDate = analysisResult.answers[0][1];
-                console.log("Appointment date from analysis:", appointmentDate);
-                
+              // Check if any user response indicates interest in booking
+              const hasBookingInterest = analysisResult.transcripts
+                .filter(t => t.user === 'user')
+                .some(t => t.text.toLowerCase().includes('yes') || 
+                          t.text.toLowerCase().includes('interested') ||
+                          t.text.toLowerCase().includes('book'));
+
+              if (hasBookingInterest) {
+                // Look for appointment time in user responses
+                const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
+                let appointmentDate = null;
+
+                for (const transcript of analysisResult.transcripts) {
+                  if (transcript.user === 'user' && 
+                      transcript.text.toLowerCase().includes('tomorrow') && 
+                      transcript.text.toLowerCase().includes('pm')) {
+                    const match = transcript.text.match(appointmentTimeRegex);
+                    if (match) {
+                      const tomorrow = new Date();
+                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      const hour = parseInt(match[1]);
+                      tomorrow.setHours(hour + 12); // Add 12 for PM
+                      tomorrow.setMinutes(0);
+                      appointmentDate = tomorrow.toISOString();
+                      console.log("Found appointment date:", appointmentDate);
+                    }
+                  }
+                }
+
                 await supabase
                   .from('campaign_calls')
                   .update({
