@@ -6,6 +6,7 @@ import { useToast } from "@/components/ui/use-toast";
 import AddContactForm from "./workflow/AddContactForm";
 import ReviewContacts from "./workflow/ReviewContacts";
 import { makeBlandAICall } from "@/utils/blandAI";
+import { analyzeBlandAICall } from "@/utils/blandAIAnalysis";
 import { supabase } from "@/integrations/supabase/client";
 
 const steps = [
@@ -54,14 +55,14 @@ const CampaignWorkflow = () => {
         return;
       }
 
-      // Create campaign record with user_id
+      // Create campaign record
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
           campaign_type: selectedCampaignType,
           property_details: propertyDetails,
           status: 'active',
-          user_id: user.id  // Add the user_id here
+          user_id: user.id
         })
         .select()
         .single();
@@ -73,29 +74,45 @@ const CampaignWorkflow = () => {
       // Create campaign calls and initiate Bland AI calls
       for (const contact of selectedContacts) {
         try {
-          // Create campaign call record
-          const { error: callError } = await supabase
-            .from('campaign_calls')
-            .insert({
-              campaign_id: campaign.id,
-              contact_name: contact.name,
-              phone_number: contact.phone,
-              status: 'initiated'
-            });
-
-          if (callError) throw callError;
-
-          console.log("Campaign call created for:", contact.name);
-
           // Initiate Bland AI call
-          await makeBlandAICall({
+          const blandAIResponse = await makeBlandAICall({
             phoneNumber: contact.phone,
             campaignType: selectedCampaignType,
             propertyDetails,
             contactName: contact.name,
           });
 
-          console.log("Bland AI call initiated for:", contact.name);
+          console.log("Bland AI call initiated for:", contact.name, blandAIResponse);
+
+          // Create campaign call record
+          const { data: callRecord, error: callError } = await supabase
+            .from('campaign_calls')
+            .insert({
+              campaign_id: campaign.id,
+              contact_name: contact.name,
+              phone_number: contact.phone,
+              status: 'initiated',
+              bland_call_id: blandAIResponse.call_id
+            })
+            .select()
+            .single();
+
+          if (callError) throw callError;
+
+          // Schedule analysis after 2 minutes
+          setTimeout(async () => {
+            try {
+              await analyzeBlandAICall(blandAIResponse.call_id);
+            } catch (error) {
+              console.error("Error analyzing call:", error);
+              toast({
+                title: "Error",
+                description: "Failed to analyze call",
+                variant: "destructive",
+              });
+            }
+          }, 120000); // 2 minutes in milliseconds
+
         } catch (error) {
           console.error('Error processing contact:', contact.name, error);
           toast({
@@ -119,8 +136,6 @@ const CampaignWorkflow = () => {
       });
     }
   };
-
-  // ... keep existing code (render method)
 
   return (
     <div className="flex gap-8">
