@@ -23,6 +23,7 @@ interface PropertyDetailsDialogProps {
     interestedBuyers: number[];
   };
   seller: {
+    id: number;  // Added this field
     name: string;
     phone: string;
   };
