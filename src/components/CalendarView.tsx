@@ -47,13 +47,19 @@ const CalendarView = () => {
       console.log("Fetched appointments:", calls);
 
       // Transform campaign_calls into appointments
-      return calls.map((call) => ({
-        id: call.id,
-        title: "Property Viewing",
-        date: new Date(call.appointment_date),
-        client: call.contact_name,
-        property: call.campaigns?.property_details || "Property details not available",
-      }));
+      return calls.map((call) => {
+        // Parse the appointment_date string into a Date object
+        const appointmentDate = new Date(call.appointment_date);
+        console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
+        
+        return {
+          id: call.id,
+          title: "Property Viewing",
+          date: appointmentDate,
+          client: call.contact_name,
+          property: call.campaigns?.property_details || "Property details not available",
+        };
+      });
     },
   });
 
@@ -65,9 +71,16 @@ const CalendarView = () => {
     console.log("Sync with Google Calendar clicked");
   };
 
-  const appointmentsForDate = appointments.filter(
-    (apt) => apt.date.toDateString() === date?.toDateString()
-  );
+  const appointmentsForDate = appointments.filter((apt) => {
+    if (!date || !apt.date) return false;
+    
+    // Convert both dates to date strings for comparison
+    const aptDate = new Date(apt.date).toDateString();
+    const selectedDate = date.toDateString();
+    console.log("Comparing dates:", aptDate, selectedDate);
+    
+    return aptDate === selectedDate;
+  });
 
   return (
     <Card className="p-6">
