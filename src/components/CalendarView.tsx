@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface Appointment {
   id: string;
@@ -50,8 +50,13 @@ const CalendarView = () => {
       // Transform campaign_calls into appointments
       const transformedAppointments = calls.map((call) => {
         try {
+          if (!call.appointment_date) {
+            console.log("No appointment date for call:", call.id);
+            return null;
+          }
+
           // Parse the appointment_date string into a Date object
-          const appointmentDate = new Date(call.appointment_date);
+          const appointmentDate = parseISO(call.appointment_date);
           console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
           
           if (isNaN(appointmentDate.getTime())) {
@@ -67,7 +72,7 @@ const CalendarView = () => {
             property: call.campaigns?.property_details || "Property details not available",
           };
         } catch (error) {
-          console.error("Error processing appointment:", error);
+          console.error("Error processing appointment:", error, "for call:", call);
           return null;
         }
       }).filter(Boolean); // Remove null entries
@@ -88,7 +93,7 @@ const CalendarView = () => {
     if (!date || !apt.date) return false;
     
     // Convert both dates to date strings for comparison
-    const aptDate = new Date(apt.date).toDateString();
+    const aptDate = apt.date.toDateString();
     const selectedDate = date.toDateString();
     console.log("Comparing dates:", aptDate, selectedDate, aptDate === selectedDate);
     
