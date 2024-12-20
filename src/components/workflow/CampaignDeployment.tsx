@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { makeBlandAICall } from "@/utils/blandAI";
 import { analyzeBlandAICall } from "@/utils/blandAIAnalysis";
 import { useState } from "react";
+import CampaignNameInput from "./campaign-deployment/CampaignNameInput";
+import PropertyDetailsInput from "./campaign-deployment/PropertyDetailsInput";
 
 interface CampaignDeploymentProps {
   selectedContacts: any[];
@@ -67,7 +68,6 @@ const CampaignDeployment = ({
         return;
       }
 
-      // Create campaign record
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
@@ -81,16 +81,12 @@ const CampaignDeployment = ({
         .single();
 
       if (campaignError) throw campaignError;
-
       console.log("Campaign created:", campaign);
 
-      // Create campaign calls and store client data
       for (const contact of selectedContacts) {
         try {
-          // Store client data first
           await storeClientData(contact, user.id);
 
-          // Initiate Bland AI call
           const blandAIResponse = await makeBlandAICall({
             phoneNumber: contact.phone,
             campaignType: selectedCampaignType,
@@ -100,7 +96,6 @@ const CampaignDeployment = ({
 
           console.log("Bland AI call initiated for:", contact.name, blandAIResponse);
 
-          // Create campaign call record
           const { data: callRecord, error: callError } = await supabase
             .from('campaign_calls')
             .insert({
@@ -115,16 +110,12 @@ const CampaignDeployment = ({
 
           if (callError) throw callError;
 
-          // Schedule analysis after 2 minutes
           setTimeout(async () => {
             try {
               const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
               console.log("Analysis result:", analysisResult);
               
-              // Update campaign call with appointment details if available
-              if (analysisResult.answers && 
-                  analysisResult.answers[0] && 
-                  analysisResult.answers[0][0] === "Yes" && 
+              if (analysisResult.answers?.[0]?.[0]?.toLowerCase() === "yes" && 
                   analysisResult.answers[0][1]) {
                 const appointmentDate = analysisResult.answers[0][1];
                 console.log("Appointment date from analysis:", appointmentDate);
@@ -148,7 +139,7 @@ const CampaignDeployment = ({
                 variant: "destructive",
               });
             }
-          }, 120000); // 2 minutes in milliseconds
+          }, 120000);
 
         } catch (error) {
           console.error('Error processing contact:', contact.name, error);
@@ -179,18 +170,13 @@ const CampaignDeployment = ({
       <h2 className="text-2xl font-bold mb-4">Review & Deploy Campaign</h2>
       <p className="text-gray-600 mb-6">Ready to launch your campaign</p>
       <div className="max-w-md mx-auto space-y-6">
-        <Input
-          placeholder="Enter campaign name..."
+        <CampaignNameInput 
           value={campaignName}
-          onChange={(e) => setCampaignName(e.target.value)}
-          className="mb-4"
+          onChange={setCampaignName}
         />
-        <textarea
-          className="w-full p-3 border rounded-md"
-          rows={4}
-          placeholder="Enter property details or additional information..."
+        <PropertyDetailsInput
           value={propertyDetails}
-          onChange={(e) => onPropertyDetailsChange(e.target.value)}
+          onChange={onPropertyDetailsChange}
         />
       </div>
       <Button 
