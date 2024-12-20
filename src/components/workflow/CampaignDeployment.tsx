@@ -8,9 +8,15 @@ interface CampaignDeploymentProps {
   selectedContacts: any[];
   selectedCampaignType: string;
   propertyDetails: string;
+  onPropertyDetailsChange: (value: string) => void;
 }
 
-const CampaignDeployment = ({ selectedContacts, selectedCampaignType, propertyDetails }: CampaignDeploymentProps) => {
+const CampaignDeployment = ({ 
+  selectedContacts, 
+  selectedCampaignType, 
+  propertyDetails,
+  onPropertyDetailsChange 
+}: CampaignDeploymentProps) => {
   const { toast } = useToast();
 
   const handleDeployCampaign = async () => {
@@ -118,7 +124,7 @@ const CampaignDeployment = ({ selectedContacts, selectedCampaignType, propertyDe
           rows={4}
           placeholder="Enter property details or additional information..."
           value={propertyDetails}
-          onChange={(e) => setPropertyDetails(e.target.value)}
+          onChange={(e) => onPropertyDetailsChange(e.target.value)}
         />
       </div>
       <Button 

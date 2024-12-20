@@ -106,6 +106,7 @@ const CampaignWorkflow = () => {
             selectedContacts={selectedContacts}
             selectedCampaignType={selectedCampaignType}
             propertyDetails={propertyDetails}
+            onPropertyDetailsChange={setPropertyDetails}
           />
         )}
       </div>
