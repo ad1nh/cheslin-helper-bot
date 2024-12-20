@@ -20,6 +20,7 @@ const CallTrackingTab = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      console.log("Fetched calls:", data);
       return data;
     },
   });
@@ -27,6 +28,17 @@ const CallTrackingTab = () => {
   if (isLoading) {
     return <div>Loading...</div>;
   }
+
+  const formatAppointmentDate = (dateString: string | null) => {
+    if (!dateString) return null;
+    try {
+      const date = new Date(dateString);
+      return format(date, "dd/MM/yyyy 'at' h:mm a");
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return dateString;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -57,18 +69,25 @@ const CallTrackingTab = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold mb-1">Call Outcome</h4>
-                  {call.outcome ? (
+                  {call.appointment_date ? (
+                    <>
+                      <p className="text-sm">Appointment scheduled</p>
+                      <p className="text-sm font-medium mt-1">
+                        {formatAppointmentDate(call.appointment_date)}
+                      </p>
+                      {call.lead_stage && (
+                        <Badge className="mt-2" variant="outline">
+                          {call.lead_stage}
+                        </Badge>
+                      )}
+                    </>
+                  ) : call.outcome ? (
                     <>
                       <p className="text-sm">{call.outcome}</p>
                       {call.lead_stage && (
                         <Badge className="mt-2" variant="outline">
                           {call.lead_stage}
                         </Badge>
-                      )}
-                      {call.appointment_date && (
-                        <p className="text-sm mt-2">
-                          Appointment: {call.appointment_date}
-                        </p>
                       )}
                     </>
                   ) : (
