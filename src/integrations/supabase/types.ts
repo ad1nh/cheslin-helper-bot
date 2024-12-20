@@ -9,6 +9,71 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      campaign_calls: {
+        Row: {
+          campaign_id: string | null
+          completed_at: string | null
+          contact_name: string
+          created_at: string
+          id: string
+          phone_number: string
+          status: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          contact_name: string
+          created_at?: string
+          id?: string
+          phone_number: string
+          status?: string
+        }
+        Update: {
+          campaign_id?: string | null
+          completed_at?: string | null
+          contact_name?: string
+          created_at?: string
+          id?: string
+          phone_number?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_calls_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          campaign_type: string
+          created_at: string
+          id: string
+          property_details: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          campaign_type: string
+          created_at?: string
+          id?: string
+          property_details?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          created_at?: string
+          id?: string
+          property_details?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           agency_name: string | null
