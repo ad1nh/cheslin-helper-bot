@@ -1,23 +1,21 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, VoicemailIcon, Home } from "lucide-react";
+import { PhoneCall, VoicemailIcon, Home, Users } from "lucide-react";
+import AddContactForm from "./workflow/AddContactForm";
+import ReviewContacts from "./workflow/ReviewContacts";
 
 const steps = [
   "Choose Campaign Type",
   "Add Contacts",
   "Review Contacts",
-  "Set Up Goal",
-  "Gather Info",
-  "Choose AI Assistant",
-  "Review AI Assistant",
   "Review & Deploy Campaign"
 ];
 
 const campaignTypes = [
   {
     title: "Qualification Calls",
-    description: "Make AI-driven calls to gather information and find top leads.",
+    description: "Make calls to gather information and find top leads.",
     icon: PhoneCall,
   },
   {
@@ -34,6 +32,7 @@ const campaignTypes = [
 
 const CampaignWorkflow = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedContacts, setSelectedContacts] = useState<any[]>([]);
 
   return (
     <div className="flex gap-8">
@@ -71,6 +70,7 @@ const CampaignWorkflow = () => {
                 <Card
                   key={campaign.title}
                   className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  onClick={() => setCurrentStep(1)}
                 >
                   <div className="flex flex-col items-center text-center space-y-4">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -84,11 +84,26 @@ const CampaignWorkflow = () => {
             </div>
           </div>
         )}
-        {/* Placeholder for other steps */}
-        {currentStep > 0 && (
+
+        {currentStep === 1 && (
+          <AddContactForm onAddContacts={(contacts) => {
+            setSelectedContacts(contacts);
+            setCurrentStep(2);
+          }} />
+        )}
+
+        {currentStep === 2 && (
+          <ReviewContacts 
+            contacts={selectedContacts}
+            onNext={() => setCurrentStep(3)}
+          />
+        )}
+
+        {currentStep === 3 && (
           <div className="text-center p-12">
-            <h2 className="text-2xl font-bold mb-4">{steps[currentStep]}</h2>
-            <p className="text-gray-600">This step is under development</p>
+            <h2 className="text-2xl font-bold mb-4">Review & Deploy Campaign</h2>
+            <p className="text-gray-600">Ready to launch your campaign</p>
+            <Button className="mt-4">Deploy Campaign</Button>
           </div>
         )}
       </div>
