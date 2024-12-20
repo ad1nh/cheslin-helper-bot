@@ -41,7 +41,7 @@ const CallTrackingTab = () => {
                   <CardTitle>{call.contact_name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{call.phone_number}</p>
                 </div>
-                <Badge variant={call.status === "completed" ? "success" : "secondary"}>
+                <Badge variant={call.status === "completed" ? "default" : "secondary"}>
                   {call.status}
                 </Badge>
               </div>
