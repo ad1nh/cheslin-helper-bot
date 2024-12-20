@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { PhoneCall, MessageSquare, Phone, ArrowLeftRight, Bell } from "lucide-react";
+import { PhoneCall, Phone, ArrowLeftRight, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import CalendarView from "./CalendarView";
 
 const mockAppointmentData = Array.from({ length: 30 }, (_, i) => ({
   date: `11/${i + 1}`,
@@ -47,7 +48,7 @@ const CampaignDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Call Connected</CardTitle>
@@ -58,19 +59,6 @@ const CampaignDashboard = () => {
             <div className="text-xs text-emerald-500 flex items-center">
               <span className="i-lucide-trending-up mr-1" />
               +12% from last month
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">SMS Replied</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">195<span className="text-sm text-muted-foreground">/612</span></div>
-            <div className="text-xs text-emerald-500 flex items-center">
-              +8% from last month
             </div>
           </CardContent>
         </Card>
@@ -168,6 +156,15 @@ const CampaignDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Campaign Calendar</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CalendarView />
+        </CardContent>
+      </Card>
     </div>
   );
 };
