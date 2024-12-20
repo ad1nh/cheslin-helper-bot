@@ -32,8 +32,17 @@ const CampaignWorkflow = () => {
   const [propertyDetails, setPropertyDetails] = useState("");
 
   const handleCampaignTypeSelect = (campaignType: string) => {
+    console.log("Selected campaign type:", campaignType);
     setSelectedCampaignType(campaignType);
     setCurrentStep(1);
+  };
+
+  const handleStepChange = (index: number) => {
+    // Only allow moving to a step if a campaign type is selected
+    if (index > 0 && !selectedCampaignType) {
+      return;
+    }
+    setCurrentStep(index);
   };
 
   return (
@@ -49,7 +58,7 @@ const CampaignWorkflow = () => {
                   ? "bg-primary text-white"
                   : "text-gray-600 hover:bg-gray-100"
               }`}
-              onClick={() => setCurrentStep(index)}
+              onClick={() => handleStepChange(index)}
             >
               {step}
             </div>
@@ -71,7 +80,11 @@ const CampaignWorkflow = () => {
               {campaignTypes.map((campaign) => (
                 <Card
                   key={campaign.title}
-                  className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  className={`p-6 cursor-pointer transition-all ${
+                    selectedCampaignType === campaign.title
+                      ? "ring-2 ring-primary shadow-lg"
+                      : "hover:shadow-lg"
+                  }`}
                   onClick={() => handleCampaignTypeSelect(campaign.title)}
                 >
                   <div className="flex flex-col items-center text-center space-y-4">
