@@ -31,14 +31,15 @@ const CampaignDashboard = () => {
       console.log("Fetching call stats...");
       const { data: calls, error } = await supabase
         .from("campaign_calls")
-        .select("*, campaigns(*)");
+        .select("*, campaigns(*)")
+        .not('appointment_date', 'is', null);
 
       if (error) {
         console.error("Error fetching call stats:", error);
         throw error;
       }
 
-      console.log("Fetched calls:", calls);
+      console.log("Fetched calls with appointments:", calls);
 
       // Process calls data for charts
       const leadStages = calls.reduce((acc: any, call) => {
@@ -59,11 +60,32 @@ const CampaignDashboard = () => {
     },
   });
 
-  const mockAppointmentData = Array.from({ length: 30 }, (_, i) => ({
-    date: `11/${i + 1}`,
-    interested: Math.floor(Math.random() * 10),
-    hot: Math.floor(Math.random() * 8),
-  }));
+  // Transform appointment data for the chart
+  const appointmentData = callStats?.calls?.reduce((acc: any[], call) => {
+    if (call.appointment_date) {
+      try {
+        const date = new Date(call.appointment_date);
+        const dateKey = `${date.getDate()}/${date.getMonth() + 1}`;
+        
+        const existingDate = acc.find(item => item.date === dateKey);
+        if (existingDate) {
+          existingDate.interested += 1;
+          if (call.lead_stage === 'Hot') existingDate.hot += 1;
+        } else {
+          acc.push({
+            date: dateKey,
+            interested: 1,
+            hot: call.lead_stage === 'Hot' ? 1 : 0
+          });
+        }
+      } catch (error) {
+        console.error("Error processing appointment date:", error);
+      }
+    }
+    return acc;
+  }, []) || [];
+
+  console.log("Processed appointment data for chart:", appointmentData);
 
   return (
     <div className="p-6 space-y-6">
@@ -109,7 +131,7 @@ const CampaignDashboard = () => {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockAppointmentData}>
+                <BarChart data={appointmentData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" />
                   <YAxis />

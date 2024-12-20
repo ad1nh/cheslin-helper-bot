@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
+import { format } from "date-fns";
 
 interface Appointment {
   id: string;
@@ -44,22 +45,35 @@ const CalendarView = () => {
         throw error;
       }
 
-      console.log("Fetched appointments:", calls);
+      console.log("Raw appointments data:", calls);
 
       // Transform campaign_calls into appointments
-      return calls.map((call) => {
-        // Parse the appointment_date string into a Date object
-        const appointmentDate = new Date(call.appointment_date);
-        console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
-        
-        return {
-          id: call.id,
-          title: "Property Viewing",
-          date: appointmentDate,
-          client: call.contact_name,
-          property: call.campaigns?.property_details || "Property details not available",
-        };
-      });
+      const transformedAppointments = calls.map((call) => {
+        try {
+          // Parse the appointment_date string into a Date object
+          const appointmentDate = new Date(call.appointment_date);
+          console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
+          
+          if (isNaN(appointmentDate.getTime())) {
+            console.error("Invalid date:", call.appointment_date);
+            return null;
+          }
+
+          return {
+            id: call.id,
+            title: "Property Viewing",
+            date: appointmentDate,
+            client: call.contact_name,
+            property: call.campaigns?.property_details || "Property details not available",
+          };
+        } catch (error) {
+          console.error("Error processing appointment:", error);
+          return null;
+        }
+      }).filter(Boolean); // Remove null entries
+
+      console.log("Transformed appointments:", transformedAppointments);
+      return transformedAppointments;
     },
   });
 
@@ -68,7 +82,6 @@ const CalendarView = () => {
       title: "Google Calendar",
       description: "Please set up Google Calendar integration in project settings",
     });
-    console.log("Sync with Google Calendar clicked");
   };
 
   const appointmentsForDate = appointments.filter((apt) => {
@@ -77,10 +90,12 @@ const CalendarView = () => {
     // Convert both dates to date strings for comparison
     const aptDate = new Date(apt.date).toDateString();
     const selectedDate = date.toDateString();
-    console.log("Comparing dates:", aptDate, selectedDate);
+    console.log("Comparing dates:", aptDate, selectedDate, aptDate === selectedDate);
     
     return aptDate === selectedDate;
   });
+
+  console.log("Appointments for selected date:", appointmentsForDate);
 
   return (
     <Card className="p-6">
@@ -116,7 +131,7 @@ const CalendarView = () => {
                         name: apt.client,
                         status: "warm",
                         phone: "(555) 123-4567",
-                        lastContact: apt.date.toISOString().split('T')[0],
+                        lastContact: format(apt.date, 'yyyy-MM-dd'),
                         propertyInterest: apt.property,
                       })}
                     >
@@ -140,7 +155,7 @@ const CalendarView = () => {
                     </p>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {apt.date.toLocaleTimeString()}
+                    {format(apt.date, 'h:mm a')}
                   </p>
                 </div>
               </Card>
