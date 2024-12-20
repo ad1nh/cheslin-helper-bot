@@ -10,6 +10,7 @@ import ViewingSchedule from "./ViewingSchedule";
 import CalendarView from "./CalendarView";
 import ClientDatabase from "./ClientDatabase";
 import PropertyDatabase from "./PropertyDatabase";
+import CallTrackingTab from "./dashboard/CallTrackingTab";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Dashboard = () => {
           <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="leads">Lead Management</TabsTrigger>
+          <TabsTrigger value="calls">Call Tracking</TabsTrigger>
           <TabsTrigger value="viewings">Viewing Schedule</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="clients">Client Database</TabsTrigger>
@@ -52,6 +54,10 @@ const Dashboard = () => {
 
         <TabsContent value="leads">
           <LeadManagement />
+        </TabsContent>
+
+        <TabsContent value="calls">
+          <CallTrackingTab />
         </TabsContent>
 
         <TabsContent value="viewings">

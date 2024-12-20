@@ -1,22 +1,46 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { PhoneCall, Phone, ArrowLeftRight, Bell } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import StatsCards from "./dashboard/StatsCards";
 import CalendarView from "./CalendarView";
 
-const mockAppointmentData = Array.from({ length: 30 }, (_, i) => ({
-  date: `11/${i + 1}`,
-  interested: Math.floor(Math.random() * 10),
-  hot: Math.floor(Math.random() * 8),
-}));
-
-const leadTagsData = [
-  { name: 'Hot Leads', value: 129, percentage: '20.8%', color: '#047857' },
-  { name: 'Interested', value: 121, percentage: '19.5%', color: '#10B981' },
-  { name: 'Disqualified', value: 70, percentage: '11.2%', color: '#E5E7EB' },
-];
-
 const CampaignDashboard = () => {
+  const { data: callStats } = useQuery({
+    queryKey: ["call-stats"],
+    queryFn: async () => {
+      const { data: calls, error } = await supabase
+        .from("campaign_calls")
+        .select("*");
+
+      if (error) throw error;
+
+      // Process calls data for charts
+      const leadStages = calls.reduce((acc: any, call) => {
+        if (call.lead_stage) {
+          acc[call.lead_stage] = (acc[call.lead_stage] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      const leadTagsData = Object.entries(leadStages).map(([name, value]) => ({
+        name,
+        value,
+        percentage: `${((Number(value) / calls.length) * 100).toFixed(1)}%`,
+        color: name === 'Hot' ? '#047857' : name === 'Warm' ? '#10B981' : '#E5E7EB',
+      }));
+
+      return { leadTagsData };
+    },
+  });
+
+  const mockAppointmentData = Array.from({ length: 30 }, (_, i) => ({
+    date: `11/${i + 1}`,
+    interested: Math.floor(Math.random() * 10),
+    hot: Math.floor(Math.random() * 8),
+  }));
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center mb-8">
@@ -48,51 +72,7 @@ const CampaignDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Call Connected</CardTitle>
-            <PhoneCall className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">320<span className="text-sm text-muted-foreground">/620</span></div>
-            <div className="text-xs text-emerald-500 flex items-center">
-              <span className="i-lucide-trending-up mr-1" />
-              +12% from last month
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Callback Scheduled</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">196</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Transfer Attempted</CardTitle>
-            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">8</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Follow up needed</CardTitle>
-            <Bell className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">220</div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsCards />
 
       <div className="grid grid-cols-3 gap-4">
         <Card className="col-span-2">
@@ -117,7 +97,7 @@ const CampaignDashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lead Tags</CardTitle>
+            <CardTitle>Lead Stages</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px] flex items-center">
@@ -125,13 +105,13 @@ const CampaignDashboard = () => {
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
                     <Pie
-                      data={leadTagsData}
+                      data={callStats?.leadTagsData || []}
                       innerRadius={60}
                       outerRadius={80}
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {leadTagsData.map((entry, index) => (
+                      {callStats?.leadTagsData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -139,7 +119,7 @@ const CampaignDashboard = () => {
                 </ResponsiveContainer>
               </div>
               <div className="w-1/2 space-y-4">
-                {leadTagsData.map((tag, index) => (
+                {callStats?.leadTagsData.map((tag: any, index: number) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />

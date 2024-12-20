@@ -11,31 +11,46 @@ export type Database = {
     Tables: {
       campaign_calls: {
         Row: {
+          appointment_date: string | null
           campaign_id: string | null
           completed_at: string | null
           contact_name: string
           created_at: string
           id: string
+          lead_stage: string | null
+          motivation: string[] | null
+          outcome: string | null
           phone_number: string
           status: string
+          timeframe: string | null
         }
         Insert: {
+          appointment_date?: string | null
           campaign_id?: string | null
           completed_at?: string | null
           contact_name: string
           created_at?: string
           id?: string
+          lead_stage?: string | null
+          motivation?: string[] | null
+          outcome?: string | null
           phone_number: string
           status?: string
+          timeframe?: string | null
         }
         Update: {
+          appointment_date?: string | null
           campaign_id?: string | null
           completed_at?: string | null
           contact_name?: string
           created_at?: string
           id?: string
+          lead_stage?: string | null
+          motivation?: string[] | null
+          outcome?: string | null
           phone_number?: string
           status?: string
+          timeframe?: string | null
         }
         Relationships: [
           {
