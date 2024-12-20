@@ -1,7 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 interface CallAnalysisResponse {
-  answers: Array<[string, string, string]>;
+  transcripts: Array<{
+    user: string;
+    text: string;
+  }>;
+  summary: string;
+  status: string;
 }
 
 export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisResponse> => {
@@ -29,20 +34,38 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     const data = await response.json();
     console.log("Call analysis response:", data);
 
-    // Parse the viewing time if it exists
-    const viewingTimeAnswer = data.answers[0][1]; // Get the first answer's second element
+    // Extract appointment details from transcripts
+    const userResponses = data.transcripts.filter(t => t.user === 'user').map(t => t.text);
+    console.log("User responses:", userResponses);
+
+    // Look for appointment time in user responses
+    const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
     let appointmentDate = null;
-    
-    if (viewingTimeAnswer && viewingTimeAnswer.match(/\d{2}:\d{2}:\d{2}:\d{2}/)) {
-      appointmentDate = viewingTimeAnswer;
+
+    for (const response of userResponses) {
+      if (response.toLowerCase().includes('tomorrow') && response.toLowerCase().includes('pm')) {
+        // Get tomorrow's date
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        // Extract time from the response
+        const match = response.match(appointmentTimeRegex);
+        if (match) {
+          const hour = parseInt(match[1]);
+          tomorrow.setHours(hour + 12); // Add 12 for PM
+          tomorrow.setMinutes(0);
+          appointmentDate = tomorrow.toISOString();
+          console.log("Extracted appointment date:", appointmentDate);
+        }
+      }
     }
 
     // Update the campaign call with the analysis results
     const { error: updateError } = await supabase
       .from('campaign_calls')
       .update({
-        outcome: JSON.stringify(data.answers[0]),
-        lead_stage: data.answers[0][0].toLowerCase().includes('yes') ? 'Hot' : 'Warm',
+        outcome: data.summary,
+        lead_stage: data.summary.toLowerCase().includes('booking a viewing') ? 'Hot' : 'Warm',
         appointment_date: appointmentDate,
         status: 'completed'
       })
