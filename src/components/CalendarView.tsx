@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/components/ui/use-toast";
 import { Calendar as CalendarIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
 
@@ -19,23 +21,41 @@ const CalendarView = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    {
-      id: "1",
-      title: "Property Viewing",
-      date: new Date(),
-      client: "John Smith",
-      property: "123 Main St",
-    },
-    {
-      id: "2",
-      title: "Property Viewing",
-      date: new Date(Date.now() + 86400000), // Tomorrow
-      client: "Sarah Johnson",
-      property: "456 Park Ave",
-    },
-  ]);
   const { toast } = useToast();
+
+  // Fetch appointments from campaign_calls
+  const { data: appointments = [] } = useQuery({
+    queryKey: ["appointments"],
+    queryFn: async () => {
+      console.log("Fetching appointments...");
+      const { data: calls, error } = await supabase
+        .from("campaign_calls")
+        .select(`
+          *,
+          campaigns (
+            property_details,
+            campaign_type
+          )
+        `)
+        .not('appointment_date', 'is', null);
+
+      if (error) {
+        console.error("Error fetching appointments:", error);
+        throw error;
+      }
+
+      console.log("Fetched appointments:", calls);
+
+      // Transform campaign_calls into appointments
+      return calls.map((call) => ({
+        id: call.id,
+        title: "Property Viewing",
+        date: new Date(call.appointment_date),
+        client: call.contact_name,
+        property: call.campaigns?.property_details || "Property details not available",
+      }));
+    },
+  });
 
   const handleGoogleSync = () => {
     toast({
@@ -79,7 +99,7 @@ const CalendarView = () => {
                     <h4 
                       className="font-medium cursor-pointer hover:text-primary"
                       onClick={() => setSelectedClient({
-                        id: parseInt(apt.id),
+                        id: apt.id,
                         name: apt.client,
                         status: "warm",
                         phone: "(555) 123-4567",
@@ -92,7 +112,7 @@ const CalendarView = () => {
                     <p 
                       className="text-sm text-muted-foreground cursor-pointer hover:text-primary"
                       onClick={() => setSelectedProperty({
-                        id: parseInt(apt.id),
+                        id: apt.id,
                         address: apt.property,
                         price: 500000,
                         type: "House",
