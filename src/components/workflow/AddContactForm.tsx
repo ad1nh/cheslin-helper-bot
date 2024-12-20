@@ -1,17 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Contact {
   id: number;
@@ -33,6 +28,8 @@ interface AddContactFormProps {
 
 const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
+  const [availableContacts, setAvailableContacts] = useState<Contact[]>([]);
+  const { toast } = useToast();
   const [newContact, setNewContact] = useState({
     name: "",
     email: "",
@@ -43,21 +40,50 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
     propertyType: "",
     notes: "",
   });
-  
-  // Mock data - in real app, fetch from database
-  const availableContacts: Contact[] = [
-    {
-      id: 1,
-      name: "John Smith",
-      email: "john@example.com",
-      phone: "(555) 123-4567",
-      propertyInterests: ["3 Bedroom House", "Luxury Condo"],
-      priceRange: { min: 300000, max: 500000 },
-      preferredLocations: ["Downtown", "Suburbs"],
-      notes: "Looking for a family home"
-    },
-    // Add more mock contacts as needed
-  ];
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const { data: clients, error } = await supabase
+        .from('clients')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching clients:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch existing contacts",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Transform clients data to match Contact interface
+      const transformedClients: Contact[] = clients.map(client => ({
+        id: parseInt(client.id),
+        name: client.name,
+        email: client.email || '',
+        phone: client.phone || '',
+        propertyInterests: client.property_interest ? [client.property_interest] : [],
+        priceRange: { min: 0, max: 0 }, // Default values since we don't store this in DB yet
+        preferredLocations: [],
+        notes: '',
+      }));
+
+      console.log('Fetched clients:', transformedClients);
+      setAvailableContacts(transformedClients);
+    } catch (error) {
+      console.error('Error in fetchClients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch existing contacts",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleNewContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,17 +151,15 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
                       <p className="text-sm">{contact.name}</p>
                     </div>
                     <div>
-                      <Label>Price Range</Label>
-                      <p className="text-sm">
-                        ${contact.priceRange.min.toLocaleString()} - ${contact.priceRange.max.toLocaleString()}
-                      </p>
+                      <Label>Phone</Label>
+                      <p className="text-sm">{contact.phone}</p>
                     </div>
                     <div>
-                      <Label>Locations</Label>
-                      <p className="text-sm">{contact.preferredLocations.join(", ")}</p>
+                      <Label>Email</Label>
+                      <p className="text-sm">{contact.email}</p>
                     </div>
                     <div>
-                      <Label>Properties</Label>
+                      <Label>Property Interest</Label>
                       <p className="text-sm">{contact.propertyInterests.join(", ")}</p>
                     </div>
                   </div>
