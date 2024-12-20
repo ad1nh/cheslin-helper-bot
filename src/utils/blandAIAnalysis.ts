@@ -23,8 +23,15 @@ export const analyzeBlandAICall = async (callId: string) => {
         questions: [
           [
             "Did the potential buyer request a time to view the property?",
-            "What date and time did the potential buyer book in to view the property? Provide in a Hour:Minute:DAY:Month (HH:MM:DD:MM) format.",
-            "Are there any other action items expressly requested or promised of the real estate agent?"
+            "Yes or No"
+          ],
+          [
+            "What date and time did the potential buyer book in to view the property?",
+            "Provide in a Hour:Minute:DAY:Month (HH:MM:DD:MM) format."
+          ],
+          [
+            "Are there any other action items expressly requested or promised of the real estate agent?",
+            "String"
           ]
         ]
       }),
@@ -38,7 +45,7 @@ export const analyzeBlandAICall = async (callId: string) => {
     console.log("Call analysis response:", data);
 
     // Parse the viewing time if it exists
-    const viewingTimeAnswer = data.answers[0][1];
+    const viewingTimeAnswer = data.answers[1][0]; // Updated index to match new question order
     let appointmentDate = null;
     
     if (viewingTimeAnswer && viewingTimeAnswer.match(/\d{2}:\d{2}:\d{2}:\d{2}/)) {
@@ -51,7 +58,7 @@ export const analyzeBlandAICall = async (callId: string) => {
     const { error: updateError } = await supabase
       .from('campaign_calls')
       .update({
-        outcome: JSON.stringify(data.answers[0]),
+        outcome: JSON.stringify(data.answers),
         lead_stage: data.answers[0][0].toLowerCase().includes('yes') ? 'Hot' : 'Warm',
         appointment_date: appointmentDate,
         status: 'completed'
