@@ -12,6 +12,7 @@ export type Database = {
       campaign_calls: {
         Row: {
           appointment_date: string | null
+          bland_call_id: string | null
           campaign_id: string | null
           completed_at: string | null
           contact_name: string
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           appointment_date?: string | null
+          bland_call_id?: string | null
           campaign_id?: string | null
           completed_at?: string | null
           contact_name: string
@@ -40,6 +42,7 @@ export type Database = {
         }
         Update: {
           appointment_date?: string | null
+          bland_call_id?: string | null
           campaign_id?: string | null
           completed_at?: string | null
           contact_name?: string
