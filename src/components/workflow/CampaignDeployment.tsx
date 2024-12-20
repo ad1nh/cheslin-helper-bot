@@ -121,11 +121,14 @@ const CampaignDeployment = ({
               const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
               
               // Update campaign call with appointment details if available
-              if (analysisResult.answers[0] === "Yes" && analysisResult.answers[1]) {
+              if (analysisResult.answers && 
+                  analysisResult.answers[0] && 
+                  analysisResult.answers[0] === "Yes" && 
+                  analysisResult.answers[1]) {
                 await supabase
                   .from('campaign_calls')
                   .update({
-                    appointment_date: analysisResult.answers[1],
+                    appointment_date: analysisResult.answers[1].toString(),
                     outcome: "Appointment scheduled",
                     status: "completed"
                   })

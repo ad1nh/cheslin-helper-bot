@@ -70,6 +70,7 @@ export type Database = {
           campaign_type: string
           created_at: string
           id: string
+          name: string | null
           property_details: string | null
           status: string
           user_id: string | null
@@ -78,6 +79,7 @@ export type Database = {
           campaign_type: string
           created_at?: string
           id?: string
+          name?: string | null
           property_details?: string | null
           status?: string
           user_id?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           campaign_type?: string
           created_at?: string
           id?: string
+          name?: string | null
           property_details?: string | null
           status?: string
           user_id?: string | null
