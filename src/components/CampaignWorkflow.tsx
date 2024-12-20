@@ -42,18 +42,33 @@ const CampaignWorkflow = () => {
 
   const handleDeployCampaign = async () => {
     try {
-      // Create campaign record
+      // Get the current user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create a campaign",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create campaign record with user_id
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
           campaign_type: selectedCampaignType,
           property_details: propertyDetails,
-          status: 'active'
+          status: 'active',
+          user_id: user.id  // Add the user_id here
         })
         .select()
         .single();
 
       if (campaignError) throw campaignError;
+
+      console.log("Campaign created:", campaign);
 
       // Create campaign calls and initiate Bland AI calls
       for (const contact of selectedContacts) {
@@ -70,6 +85,8 @@ const CampaignWorkflow = () => {
 
           if (callError) throw callError;
 
+          console.log("Campaign call created for:", contact.name);
+
           // Initiate Bland AI call
           await makeBlandAICall({
             phoneNumber: contact.phone,
@@ -77,6 +94,8 @@ const CampaignWorkflow = () => {
             propertyDetails,
             contactName: contact.name,
           });
+
+          console.log("Bland AI call initiated for:", contact.name);
         } catch (error) {
           console.error('Error processing contact:', contact.name, error);
           toast({
@@ -100,6 +119,8 @@ const CampaignWorkflow = () => {
       });
     }
   };
+
+  // ... keep existing code (render method)
 
   return (
     <div className="flex gap-8">
