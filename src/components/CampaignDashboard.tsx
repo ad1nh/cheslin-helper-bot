@@ -7,14 +7,38 @@ import StatsCards from "./dashboard/StatsCards";
 import CalendarView from "./CalendarView";
 
 const CampaignDashboard = () => {
+  const { data: campaigns } = useQuery({
+    queryKey: ["campaigns"],
+    queryFn: async () => {
+      console.log("Fetching campaigns...");
+      const { data: campaigns, error } = await supabase
+        .from("campaigns")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching campaigns:", error);
+        throw error;
+      }
+
+      console.log("Fetched campaigns:", campaigns);
+      return campaigns;
+    },
+  });
+
   const { data: callStats } = useQuery({
     queryKey: ["call-stats"],
     queryFn: async () => {
+      console.log("Fetching call stats...");
       const { data: calls, error } = await supabase
         .from("campaign_calls")
-        .select("*");
+        .select("*, campaigns(*)");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching call stats:", error);
+        throw error;
+      }
+
+      console.log("Fetched calls:", calls);
 
       // Process calls data for charts
       const leadStages = calls.reduce((acc: any, call) => {
@@ -31,7 +55,7 @@ const CampaignDashboard = () => {
         color: name === 'Hot' ? '#047857' : name === 'Warm' ? '#10B981' : '#E5E7EB',
       }));
 
-      return { leadTagsData };
+      return { leadTagsData, calls };
     },
   });
 
@@ -55,8 +79,11 @@ const CampaignDashboard = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Campaigns</SelectItem>
-              <SelectItem value="campaign1">Campaign 1</SelectItem>
-              <SelectItem value="campaign2">Campaign 2</SelectItem>
+              {campaigns?.map((campaign) => (
+                <SelectItem key={campaign.id} value={campaign.id}>
+                  {campaign.name || `Campaign ${campaign.id.slice(0, 8)}`}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select defaultValue="30">
@@ -111,7 +138,7 @@ const CampaignDashboard = () => {
                       paddingAngle={5}
                       dataKey="value"
                     >
-                      {callStats?.leadTagsData.map((entry: any, index: number) => (
+                      {callStats?.leadTagsData?.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -119,7 +146,7 @@ const CampaignDashboard = () => {
                 </ResponsiveContainer>
               </div>
               <div className="w-1/2 space-y-4">
-                {callStats?.leadTagsData.map((tag: any, index: number) => (
+                {callStats?.leadTagsData?.map((tag: any, index: number) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tag.color }} />
