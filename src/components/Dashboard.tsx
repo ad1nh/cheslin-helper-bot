@@ -3,6 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import CampaignWorkflow from "./CampaignWorkflow";
+import CampaignDashboard from "./CampaignDashboard";
 import LeadManagement from "./LeadManagement";
 import ViewingSchedule from "./ViewingSchedule";
 import CalendarView from "./CalendarView";
@@ -29,26 +31,41 @@ const Dashboard = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="leads" className="space-y-4">
+      <Tabs defaultValue="campaigns" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="leads">Lead Management</TabsTrigger>
           <TabsTrigger value="viewings">Viewing Schedule</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
           <TabsTrigger value="clients">Client Database</TabsTrigger>
           <TabsTrigger value="properties">Property Database</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="campaigns">
+          <CampaignWorkflow />
+        </TabsContent>
+
+        <TabsContent value="dashboard">
+          <CampaignDashboard />
+        </TabsContent>
+
         <TabsContent value="leads">
           <LeadManagement />
         </TabsContent>
+
         <TabsContent value="viewings">
           <ViewingSchedule />
         </TabsContent>
+
         <TabsContent value="calendar">
           <CalendarView />
         </TabsContent>
+
         <TabsContent value="clients">
           <ClientDatabase />
         </TabsContent>
+
         <TabsContent value="properties">
           <PropertyDatabase />
         </TabsContent>
