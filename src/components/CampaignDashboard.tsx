@@ -21,7 +21,7 @@ const CampaignDashboard = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-semibold">Hello, Samir Sen</h1>
+          <h1 className="text-3xl font-semibold">Dashboard</h1>
           <p className="text-muted-foreground">Check the current stats of the operation</p>
         </div>
         <div className="flex gap-4">

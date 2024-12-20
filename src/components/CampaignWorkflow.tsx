@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PhoneCall, VoicemailIcon, Home, Users } from "lucide-react";
+import { PhoneCall, Home, Users } from "lucide-react";
 import AddContactForm from "./workflow/AddContactForm";
 import ReviewContacts from "./workflow/ReviewContacts";
 
@@ -17,11 +17,6 @@ const campaignTypes = [
     title: "Solicit Buyers",
     description: "Contact potential buyers to schedule viewings for your listed properties.",
     icon: PhoneCall,
-  },
-  {
-    title: "Voicemail Campaign",
-    description: "Send personalised voicemails to your contacts automatically.",
-    icon: VoicemailIcon,
   },
   {
     title: "Follow Up from Open House",
