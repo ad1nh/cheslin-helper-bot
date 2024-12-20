@@ -1,10 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
 
 interface CallAnalysisResponse {
-  answers: string[][];
+  answers: [string, string, string][];
 }
 
-export const analyzeBlandAICall = async (callId: string) => {
+export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisResponse> => {
   console.log("Analyzing call:", callId);
   
   try {
@@ -45,7 +45,7 @@ export const analyzeBlandAICall = async (callId: string) => {
     console.log("Call analysis response:", data);
 
     // Parse the viewing time if it exists
-    const viewingTimeAnswer = data.answers[1][0]; // Updated index to match new question order
+    const viewingTimeAnswer = data.answers[0][1]; // Get the first answer's second element
     let appointmentDate = null;
     
     if (viewingTimeAnswer && viewingTimeAnswer.match(/\d{2}:\d{2}:\d{2}:\d{2}/)) {
@@ -58,7 +58,7 @@ export const analyzeBlandAICall = async (callId: string) => {
     const { error: updateError } = await supabase
       .from('campaign_calls')
       .update({
-        outcome: JSON.stringify(data.answers),
+        outcome: JSON.stringify(data.answers[0]),
         lead_stage: data.answers[0][0].toLowerCase().includes('yes') ? 'Hot' : 'Warm',
         appointment_date: appointmentDate,
         status: 'completed'

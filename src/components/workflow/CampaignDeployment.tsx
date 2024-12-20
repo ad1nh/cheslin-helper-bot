@@ -13,11 +13,6 @@ interface CampaignDeploymentProps {
   onPropertyDetailsChange: (value: string) => void;
 }
 
-// Define the type for the analysis result
-interface AnalysisResult {
-  answers: [string, string, string] | null;
-}
-
 const CampaignDeployment = ({ 
   selectedContacts, 
   selectedCampaignType, 
@@ -123,15 +118,15 @@ const CampaignDeployment = ({
           // Schedule analysis after 2 minutes
           setTimeout(async () => {
             try {
-              const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id) as AnalysisResult;
+              const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
               console.log("Analysis result:", analysisResult);
               
               // Update campaign call with appointment details if available
               if (analysisResult.answers && 
                   analysisResult.answers[0] && 
-                  analysisResult.answers[0] === "Yes" && 
-                  analysisResult.answers[1]) {
-                const appointmentDate = analysisResult.answers[1];
+                  analysisResult.answers[0][0] === "Yes" && 
+                  analysisResult.answers[0][1]) {
+                const appointmentDate = analysisResult.answers[0][1];
                 console.log("Appointment date from analysis:", appointmentDate);
                 
                 await supabase
