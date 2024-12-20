@@ -1,5 +1,8 @@
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import LeadManagement from "./LeadManagement";
 import ViewingSchedule from "./ViewingSchedule";
 import CalendarView from "./CalendarView";
@@ -7,11 +10,23 @@ import ClientDatabase from "./ClientDatabase";
 import PropertyDatabase from "./PropertyDatabase";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
+
   return (
     <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-primary mb-2">Welcome to Cheslin</h1>
-        <p className="text-secondary">Your AI-powered real estate assistant</p>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-primary mb-2">Welcome to Cheslin</h1>
+          <p className="text-secondary">Your AI-powered real estate assistant</p>
+        </div>
+        <Button variant="outline" onClick={handleLogout}>
+          Sign Out
+        </Button>
       </div>
 
       <Tabs defaultValue="leads" className="space-y-4">
