@@ -19,6 +19,29 @@ const CampaignDeployment = ({
 }: CampaignDeploymentProps) => {
   const { toast } = useToast();
 
+  const storeClientData = async (contact: any, userId: string) => {
+    try {
+      const { data: client, error } = await supabase
+        .from('clients')
+        .insert({
+          name: contact.name,
+          phone: contact.phone,
+          property_interest: propertyDetails,
+          status: 'warm',
+          user_id: userId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      console.log("Client stored successfully:", client);
+      return client;
+    } catch (error) {
+      console.error("Error storing client:", error);
+      throw error;
+    }
+  };
+
   const handleDeployCampaign = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -48,9 +71,12 @@ const CampaignDeployment = ({
 
       console.log("Campaign created:", campaign);
 
-      // Create campaign calls and initiate Bland AI calls
+      // Create campaign calls and store client data
       for (const contact of selectedContacts) {
         try {
+          // Store client data first
+          await storeClientData(contact, user.id);
+
           // Initiate Bland AI call
           const blandAIResponse = await makeBlandAICall({
             phoneNumber: contact.phone,
