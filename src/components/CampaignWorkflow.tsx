@@ -6,7 +6,7 @@ import AddContactForm from "./workflow/AddContactForm";
 import ReviewContacts from "./workflow/ReviewContacts";
 
 const steps = [
-  "Choose Campaign Type",
+  "Launch Campaign Type",
   "Add Contacts",
   "Review Contacts",
   "Review & Deploy Campaign"
@@ -14,8 +14,8 @@ const steps = [
 
 const campaignTypes = [
   {
-    title: "Qualification Calls",
-    description: "Make calls to gather information and find top leads.",
+    title: "Solicit Buyers",
+    description: "Contact potential buyers to schedule viewings for your listed properties.",
     icon: PhoneCall,
   },
   {
