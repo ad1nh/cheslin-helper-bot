@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { makeBlandAICall } from "@/utils/blandAI";
 import { analyzeBlandAICall } from "@/utils/blandAIAnalysis";
+import { useState } from "react";
 
 interface CampaignDeploymentProps {
   selectedContacts: any[];
@@ -18,6 +20,7 @@ const CampaignDeployment = ({
   onPropertyDetailsChange 
 }: CampaignDeploymentProps) => {
   const { toast } = useToast();
+  const [campaignName, setCampaignName] = useState("");
 
   const storeClientData = async (contact: any, userId: string) => {
     try {
@@ -43,6 +46,15 @@ const CampaignDeployment = ({
   };
 
   const handleDeployCampaign = async () => {
+    if (!campaignName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a campaign name",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -62,7 +74,8 @@ const CampaignDeployment = ({
           campaign_type: selectedCampaignType,
           property_details: propertyDetails,
           status: 'active',
-          user_id: user.id
+          user_id: user.id,
+          name: campaignName
         })
         .select()
         .single();
@@ -105,7 +118,19 @@ const CampaignDeployment = ({
           // Schedule analysis after 2 minutes
           setTimeout(async () => {
             try {
-              await analyzeBlandAICall(blandAIResponse.call_id);
+              const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
+              
+              // Update campaign call with appointment details if available
+              if (analysisResult.answers[0] === "Yes" && analysisResult.answers[1]) {
+                await supabase
+                  .from('campaign_calls')
+                  .update({
+                    appointment_date: analysisResult.answers[1],
+                    outcome: "Appointment scheduled",
+                    status: "completed"
+                  })
+                  .eq('bland_call_id', blandAIResponse.call_id);
+              }
             } catch (error) {
               console.error("Error analyzing call:", error);
               toast({
@@ -144,7 +169,13 @@ const CampaignDeployment = ({
     <div className="text-center p-12">
       <h2 className="text-2xl font-bold mb-4">Review & Deploy Campaign</h2>
       <p className="text-gray-600 mb-6">Ready to launch your campaign</p>
-      <div className="max-w-md mx-auto mb-6">
+      <div className="max-w-md mx-auto space-y-6">
+        <Input
+          placeholder="Enter campaign name..."
+          value={campaignName}
+          onChange={(e) => setCampaignName(e.target.value)}
+          className="mb-4"
+        />
         <textarea
           className="w-full p-3 border rounded-md"
           rows={4}
@@ -155,7 +186,7 @@ const CampaignDeployment = ({
       </div>
       <Button 
         onClick={handleDeployCampaign}
-        className="w-full max-w-md"
+        className="w-full max-w-md mt-6"
       >
         Deploy Campaign
       </Button>
