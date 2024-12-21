@@ -24,23 +24,32 @@ export const makeBlandAICall = async ({ phoneNumber, campaignType, propertyDetai
 
   console.log("Making Bland AI call with task:", task);
 
-  const { data: { BLAND_AI_API_KEY } } = await supabase.functions.invoke('get-secret', {
-    body: { name: 'BLAND_AI_API_KEY' }
-  });
-
-  const headers = {
-    'Authorization': BLAND_AI_API_KEY,
-    'x-bland-org-id': '27eb107b-389d-4206-b7be-643adeb33ce6',
-    'Content-Type': 'application/json',
-  };
-
-  const data = {
-    phone_number: phoneNumber,
-    task: task,
-    voice: "nat",
-  };
-
   try {
+    const { data: { BLAND_AI_API_KEY } } = await supabase.functions.invoke('get-secret', {
+      body: { name: 'BLAND_AI_API_KEY' }
+    });
+
+    if (!BLAND_AI_API_KEY) {
+      throw new Error('Failed to retrieve BLAND_AI_API_KEY');
+    }
+
+    const headers = {
+      'Authorization': BLAND_AI_API_KEY,
+      'x-bland-org-id': '27eb107b-389d-4206-b7be-643adeb33ce6',
+      'Content-Type': 'application/json',
+    };
+
+    const data = {
+      phone_number: phoneNumber,
+      task: task,
+      voice: "nat",
+    };
+
+    console.log("Making API call to Bland AI with data:", {
+      ...data,
+      phone_number: "REDACTED" // Don't log phone numbers
+    });
+
     const response = await fetch('https://api.bland.ai/v1/calls', {
       method: 'POST',
       headers,
@@ -48,12 +57,14 @@ export const makeBlandAICall = async ({ phoneNumber, campaignType, propertyDetai
     });
 
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Bland AI API error:', errorData);
-      throw new Error(`Failed to initiate call: ${errorData}`);
+      const errorText = await response.text();
+      console.error('Bland AI API error response:', errorText);
+      throw new Error(`Failed to initiate call: ${errorText}`);
     }
 
-    return await response.json();
+    const responseData = await response.json();
+    console.log("Successful response from Bland AI:", responseData);
+    return responseData;
   } catch (error) {
     console.error('Error making Bland AI call:', error);
     throw error;
