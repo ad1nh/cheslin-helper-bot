@@ -10,7 +10,7 @@ interface CallAnalysisResponse {
 }
 
 export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisResponse> => {
-  console.log("Analyzing call:", callId);
+  console.log("Starting analysis for call:", callId);
   
   try {
     const { data: { BLAND_AI_API_KEY } } = await supabase.functions.invoke('get-secret', {
@@ -20,6 +20,15 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     if (!BLAND_AI_API_KEY) {
       throw new Error('BLAND_AI_API_KEY not found');
     }
+
+    // First, let's check if we already have this call in our database
+    const { data: existingCall } = await supabase
+      .from('campaign_calls')
+      .select('*')
+      .eq('bland_call_id', callId)
+      .single();
+
+    console.log("Existing call data:", existingCall);
 
     const response = await fetch(`https://api.bland.ai/v1/calls/${callId}`, {
       headers: {
@@ -32,13 +41,14 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     }
 
     const data = await response.json();
-    console.log("Call analysis response:", data);
+    console.log("Raw Bland AI response:", data);
 
     // Extract appointment details from transcripts
     const userResponses = data.transcripts
       .filter((t: any) => t.user === 'user')
       .map((t: any) => t.text);
-    console.log("User responses:", userResponses);
+    
+    console.log("All user responses:", userResponses);
 
     // Look for appointment time in user responses
     const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
@@ -51,21 +61,28 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     const tomorrowRegex = /tomorrow/i;
     
     for (const response of userResponses) {
-      console.log("Processing response:", response);
+      console.log("\nAnalyzing response:", response);
       
       // Check for specific date mention
       const dateMatch = response.match(dateRegex);
       const timeMatch = response.match(appointmentTimeRegex);
       const tomorrowMatch = response.match(tomorrowRegex);
       
+      console.log("Regex matches:", {
+        dateMatch,
+        timeMatch,
+        tomorrowMatch
+      });
+      
       if (dateMatch && timeMatch) {
-        console.log("Found date and time match:", { dateMatch, timeMatch });
+        console.log("Found specific date and time match");
         const day = parseInt(dateMatch[1]);
         const month = dateMatch[2];
         const year = new Date().getFullYear();
         
         // Create date object
         const date = new Date(`${month} ${day}, ${year}`);
+        console.log("Created date object:", date);
         
         // Extract time
         let hour = parseInt(timeMatch[1]);
@@ -78,12 +95,14 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
           hour = 0;
         }
         
+        console.log("Calculated hour:", hour);
+        
         // Set the time
         date.setHours(hour, 0, 0, 0);
         appointmentDate = date.toISOString();
-        console.log("Extracted specific appointment date and time:", appointmentDate);
+        console.log("Set final appointment date:", appointmentDate);
       } else if (tomorrowMatch && timeMatch) {
-        console.log("Found tomorrow and time match:", { timeMatch });
+        console.log("Found tomorrow with time");
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + 1);
         
@@ -96,22 +115,39 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
           hour = 0;
         }
         
+        console.log("Calculated hour for tomorrow:", hour);
+        
         tomorrow.setHours(hour, 0, 0, 0);
         appointmentDate = tomorrow.toISOString();
-        console.log("Extracted tomorrow's appointment date and time:", appointmentDate);
+        console.log("Set final appointment date for tomorrow:", appointmentDate);
       }
     }
 
     // Check if we found an appointment in the conversation
-    const hasAppointment = userResponses.some(response => 
-      response.toLowerCase().includes('yes') && 
-      (response.toLowerCase().includes('appointment') || 
-       response.toLowerCase().includes('viewing') ||
-       response.toLowerCase().includes('see the property'))
-    );
+    const hasAppointment = userResponses.some(response => {
+      const isPositive = response.toLowerCase().includes('yes');
+      const mentionsAppointment = 
+        response.toLowerCase().includes('appointment') || 
+        response.toLowerCase().includes('viewing') ||
+        response.toLowerCase().includes('see the property');
+      
+      console.log("Checking response for appointment confirmation:", {
+        response,
+        isPositive,
+        mentionsAppointment
+      });
+      
+      return isPositive && mentionsAppointment;
+    });
+
+    console.log("Final analysis results:", {
+      hasAppointment,
+      appointmentDate,
+      callId
+    });
 
     // Update the campaign call with the analysis results
-    const { error: updateError } = await supabase
+    const { data: updatedCall, error: updateError } = await supabase
       .from('campaign_calls')
       .update({
         outcome: hasAppointment ? "Appointment scheduled" : data.summary,
@@ -119,18 +155,16 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
         appointment_date: appointmentDate,
         status: 'completed'
       })
-      .eq('bland_call_id', callId);
+      .eq('bland_call_id', callId)
+      .select()
+      .single();
 
     if (updateError) {
       console.error("Error updating campaign call:", updateError);
       throw updateError;
     }
 
-    console.log("Successfully updated campaign call with appointment:", {
-      hasAppointment,
-      appointmentDate,
-      callId
-    });
+    console.log("Successfully updated campaign call:", updatedCall);
 
     return data as CallAnalysisResponse;
   } catch (error) {
