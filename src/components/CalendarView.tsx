@@ -16,6 +16,7 @@ interface Appointment {
   date: Date;
   client: string;
   property: string;
+  time: string;
 }
 
 const CalendarView = () => {
@@ -38,7 +39,8 @@ const CalendarView = () => {
             campaign_type
           )
         `)
-        .not('appointment_date', 'is', null);
+        .not('appointment_date', 'is', null)
+        .neq('appointment_date', '');  // Add this line to filter out empty strings
 
       if (error) {
         console.error("Error fetching appointments:", error);
