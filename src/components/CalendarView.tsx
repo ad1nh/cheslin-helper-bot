@@ -8,7 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isSameDay } from "date-fns";
 
 interface Appointment {
   id: string;
@@ -70,6 +70,7 @@ const CalendarView = () => {
             date: appointmentDate,
             client: call.contact_name,
             property: call.campaigns?.property_details || "Property details not available",
+            time: format(appointmentDate, 'h:mm a')
           };
         } catch (error) {
           console.error("Error processing appointment:", error, "for call:", call);
@@ -91,13 +92,7 @@ const CalendarView = () => {
 
   const appointmentsForDate = appointments.filter((apt) => {
     if (!date || !apt.date) return false;
-    
-    // Convert both dates to date strings for comparison
-    const aptDate = apt.date.toDateString();
-    const selectedDate = date.toDateString();
-    console.log("Comparing dates:", aptDate, selectedDate, aptDate === selectedDate);
-    
-    return aptDate === selectedDate;
+    return isSameDay(apt.date, date);
   });
 
   console.log("Appointments for selected date:", appointmentsForDate);
@@ -122,7 +117,7 @@ const CalendarView = () => {
         </div>
         <div>
           <h3 className="text-lg font-medium mb-4">
-            Appointments for {date?.toLocaleDateString()}
+            Appointments for {date ? format(date, 'MMMM do, yyyy') : 'today'}
           </h3>
           <div className="space-y-4">
             {appointmentsForDate.map((apt) => (
@@ -159,8 +154,8 @@ const CalendarView = () => {
                       Property: {apt.property}
                     </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {format(apt.date, 'h:mm a')}
+                  <p className="text-sm font-medium">
+                    {apt.time}
                   </p>
                 </div>
               </Card>

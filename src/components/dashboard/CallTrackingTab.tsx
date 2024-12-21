@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const CallTrackingTab = () => {
   const { data: calls, isLoading } = useQuery({
@@ -32,8 +32,8 @@ const CallTrackingTab = () => {
   const formatAppointmentDate = (dateString: string | null) => {
     if (!dateString) return null;
     try {
-      const date = new Date(dateString);
-      return format(date, "dd/MM/yyyy 'at' h:mm a");
+      const date = parseISO(dateString);
+      return format(date, "EEEE, MMMM do yyyy 'at' h:mm a");
     } catch (error) {
       console.error("Error formatting date:", error);
       return dateString;
@@ -71,8 +71,8 @@ const CallTrackingTab = () => {
                   <h4 className="font-semibold mb-1">Call Outcome</h4>
                   {call.appointment_date ? (
                     <>
-                      <p className="text-sm">Appointment scheduled</p>
-                      <p className="text-sm font-medium mt-1">
+                      <p className="text-sm font-medium">Appointment scheduled for:</p>
+                      <p className="text-sm mt-1">
                         {formatAppointmentDate(call.appointment_date)}
                       </p>
                       {call.lead_stage && (
