@@ -40,7 +40,7 @@ const CalendarView = () => {
           )
         `)
         .not('appointment_date', 'is', null)
-        .neq('appointment_date', '');  // Add this line to filter out empty strings
+        .neq('appointment_date', '');
 
       if (error) {
         console.error("Error fetching appointments:", error);
