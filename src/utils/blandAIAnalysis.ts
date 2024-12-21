@@ -35,7 +35,9 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     console.log("Call analysis response:", data);
 
     // Extract appointment details from transcripts
-    const userResponses = data.transcripts.filter(t => t.user === 'user').map(t => t.text);
+    const userResponses = data.transcripts
+      .filter((t: any) => t.user === 'user')
+      .map((t: any) => t.text);
     console.log("User responses:", userResponses);
 
     // Look for appointment time in user responses
@@ -45,11 +47,19 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     // Get the date mentioned (23rd December)
     const dateRegex = /(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)/i;
     
+    // Also look for relative dates like "tomorrow"
+    const tomorrowRegex = /tomorrow/i;
+    
     for (const response of userResponses) {
+      console.log("Processing response:", response);
+      
+      // Check for specific date mention
       const dateMatch = response.match(dateRegex);
       const timeMatch = response.match(appointmentTimeRegex);
+      const tomorrowMatch = response.match(tomorrowRegex);
       
       if (dateMatch && timeMatch) {
+        console.log("Found date and time match:", { dateMatch, timeMatch });
         const day = parseInt(dateMatch[1]);
         const month = dateMatch[2];
         const year = new Date().getFullYear();
@@ -71,16 +81,41 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
         // Set the time
         date.setHours(hour, 0, 0, 0);
         appointmentDate = date.toISOString();
-        console.log("Extracted appointment date and time:", appointmentDate);
+        console.log("Extracted specific appointment date and time:", appointmentDate);
+      } else if (tomorrowMatch && timeMatch) {
+        console.log("Found tomorrow and time match:", { timeMatch });
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        
+        let hour = parseInt(timeMatch[1]);
+        const period = (timeMatch[3] || '').toLowerCase();
+        
+        if (period === 'pm' && hour < 12) {
+          hour += 12;
+        } else if (period === 'am' && hour === 12) {
+          hour = 0;
+        }
+        
+        tomorrow.setHours(hour, 0, 0, 0);
+        appointmentDate = tomorrow.toISOString();
+        console.log("Extracted tomorrow's appointment date and time:", appointmentDate);
       }
     }
+
+    // Check if we found an appointment in the conversation
+    const hasAppointment = userResponses.some(response => 
+      response.toLowerCase().includes('yes') && 
+      (response.toLowerCase().includes('appointment') || 
+       response.toLowerCase().includes('viewing') ||
+       response.toLowerCase().includes('see the property'))
+    );
 
     // Update the campaign call with the analysis results
     const { error: updateError } = await supabase
       .from('campaign_calls')
       .update({
-        outcome: data.summary,
-        lead_stage: data.summary.toLowerCase().includes('booking a viewing') ? 'Hot' : 'Warm',
+        outcome: hasAppointment ? "Appointment scheduled" : data.summary,
+        lead_stage: hasAppointment ? 'Hot' : 'Warm',
         appointment_date: appointmentDate,
         status: 'completed'
       })
@@ -90,6 +125,12 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       console.error("Error updating campaign call:", updateError);
       throw updateError;
     }
+
+    console.log("Successfully updated campaign call with appointment:", {
+      hasAppointment,
+      appointmentDate,
+      callId
+    });
 
     return data as CallAnalysisResponse;
   } catch (error) {
