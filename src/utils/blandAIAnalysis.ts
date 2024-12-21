@@ -42,21 +42,36 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
     let appointmentDate = null;
 
+    // Get the date mentioned (23rd December)
+    const dateRegex = /(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)/i;
+    
     for (const response of userResponses) {
-      if (response.toLowerCase().includes('tomorrow') && response.toLowerCase().includes('pm')) {
-        // Get tomorrow's date
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateMatch = response.match(dateRegex);
+      const timeMatch = response.match(appointmentTimeRegex);
+      
+      if (dateMatch && timeMatch) {
+        const day = parseInt(dateMatch[1]);
+        const month = dateMatch[2];
+        const year = new Date().getFullYear();
         
-        // Extract time from the response
-        const match = response.match(appointmentTimeRegex);
-        if (match) {
-          const hour = parseInt(match[1]);
-          tomorrow.setHours(hour + 12); // Add 12 for PM
-          tomorrow.setMinutes(0);
-          appointmentDate = tomorrow.toISOString();
-          console.log("Extracted appointment date:", appointmentDate);
+        // Create date object
+        const date = new Date(`${month} ${day}, ${year}`);
+        
+        // Extract time
+        let hour = parseInt(timeMatch[1]);
+        const period = (timeMatch[3] || '').toLowerCase();
+        
+        // Convert to 24-hour format if needed
+        if (period === 'pm' && hour < 12) {
+          hour += 12;
+        } else if (period === 'am' && hour === 12) {
+          hour = 0;
         }
+        
+        // Set the time
+        date.setHours(hour, 0, 0, 0);
+        appointmentDate = date.toISOString();
+        console.log("Extracted appointment date and time:", appointmentDate);
       }
     }
 

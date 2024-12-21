@@ -49,7 +49,7 @@ const CallTrackingTab = () => {
       const date = parseISO(dateString);
       return format(date, "EEEE, MMMM do yyyy 'at' h:mm a");
     } catch (error) {
-      console.error("Error formatting date:", error);
+      console.error("Error formatting date:", error, "for date string:", dateString);
       return dateString;
     }
   };
