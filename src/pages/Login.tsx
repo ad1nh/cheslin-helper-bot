@@ -16,6 +16,10 @@ const Login = () => {
     });
   }, [navigate]);
 
+  // Get the current origin without any trailing slashes or colons
+  const redirectTo = window.location.origin.replace(/\/$/, '');
+  console.log("Redirect URL:", redirectTo);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-lg shadow-lg">
@@ -27,7 +31,7 @@ const Login = () => {
           supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           providers={[]}
-          redirectTo={window.location.origin}
+          redirectTo={redirectTo}
         />
       </div>
     </div>
