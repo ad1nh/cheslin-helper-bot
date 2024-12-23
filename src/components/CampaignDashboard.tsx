@@ -32,6 +32,7 @@ const CampaignDashboard = () => {
       const { data: calls, error } = await supabase
         .from("campaign_calls")
         .select("*, campaigns(*)")
+        .eq('outcome', 'Appointment scheduled')
         .not('appointment_date', 'is', null);
 
       if (error) {

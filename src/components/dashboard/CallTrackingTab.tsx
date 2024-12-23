@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface CallDetails {
   id: string;
@@ -43,133 +44,92 @@ const CallTrackingTab = () => {
     },
   });
 
-  const formatAppointmentDate = (dateString: string | null) => {
-    if (!dateString) return null;
-    try {
-      const date = parseISO(dateString);
-      return format(date, "EEEE, MMMM do yyyy 'at' h:mm a");
-    } catch (error) {
-      console.error("Error formatting date:", error, "for date string:", dateString);
-      return dateString;
-    }
-  };
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Call Tracking</h2>
-      
-      <div className="grid gap-4">
-        {calls?.map((call) => (
-          <Card key={call.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setSelectedCall(call)}>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>{call.contact_name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{call.phone_number}</p>
-                </div>
-                <Badge variant={call.status === "completed" ? "default" : "secondary"}>
-                  {call.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold mb-1">Campaign Details</h4>
-                  <p className="text-sm">{call.campaigns?.campaign_type}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {call.campaigns?.property_details}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1">Call Outcome</h4>
-                  {call.appointment_date ? (
-                    <>
-                      <p className="text-sm font-medium">Appointment scheduled for:</p>
-                      <p className="text-sm mt-1">
-                        {formatAppointmentDate(call.appointment_date)}
-                      </p>
-                      {call.lead_stage && (
-                        <Badge className="mt-2" variant="outline">
-                          {call.lead_stage}
-                        </Badge>
-                      )}
-                    </>
-                  ) : call.outcome ? (
-                    <>
-                      <p className="text-sm">{call.outcome}</p>
-                      {call.lead_stage && (
-                        <Badge className="mt-2" variant="outline">
-                          {call.lead_stage}
-                        </Badge>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No outcome recorded</p>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+    <Card className="p-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-semibold">Call Tracking</h2>
+            <p className="text-muted-foreground">Monitor and manage your campaign calls</p>
+          </div>
+        </div>
+
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableCell>Contact</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Outcome</TableCell>
+                <TableCell>Lead Stage</TableCell>
+                <TableCell>Appointment</TableCell>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {calls?.map((call) => (
+                <TableRow 
+                  key={call.id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => {
+                    console.log("Selected call data:", call);
+                    setSelectedCall(call);
+                  }}
+                >
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="font-medium">{call.contact_name}</div>
+                      <div className="text-sm text-muted-foreground">{call.phone_number}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={call.status === 'completed' ? 'default' : 'secondary'}>
+                      {call.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{call.outcome || '-'}</TableCell>
+                  <TableCell>{call.lead_stage || '-'}</TableCell>
+                  <TableCell>
+                    {call.appointment_date ? 
+                      format(parseISO(call.appointment_date), 'PPp') : 
+                      '-'
+                    }
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
-      <Dialog open={!!selectedCall} onOpenChange={(open) => !open && setSelectedCall(null)}>
-        <DialogContent className="max-w-2xl">
+      <Dialog open={!!selectedCall} onOpenChange={() => setSelectedCall(null)}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Call Details</DialogTitle>
           </DialogHeader>
           {selectedCall && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold mb-2">Contact Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Name:</span> {selectedCall.contact_name}</p>
-                    <p><span className="font-medium">Phone:</span> {selectedCall.phone_number}</p>
-                    <p><span className="font-medium">Lead Stage:</span> {selectedCall.lead_stage || 'Not set'}</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-2">Campaign Information</h3>
-                  <div className="space-y-2">
-                    <p><span className="font-medium">Type:</span> {selectedCall.campaigns?.campaign_type}</p>
-                    <p><span className="font-medium">Property:</span> {selectedCall.campaigns?.property_details}</p>
-                  </div>
-                </div>
-              </div>
-
+            <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Appointment Details</h3>
-                {selectedCall.appointment_date ? (
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <p className="text-green-800 font-medium">
-                      Appointment Confirmed for:
-                    </p>
-                    <p className="text-green-700 text-lg mt-1">
-                      {formatAppointmentDate(selectedCall.appointment_date)}
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No appointment scheduled</p>
-                )}
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2">Call Outcome</h3>
-                <p className="text-muted-foreground">
-                  {selectedCall.outcome || 'No outcome recorded'}
-                </p>
+                <h3 className="font-semibold mb-2">Contact Information</h3>
+                <div className="space-y-2">
+                  <p><span className="font-medium">Name:</span> {selectedCall.contact_name}</p>
+                  <p><span className="font-medium">Phone:</span> {selectedCall.phone_number}</p>
+                  <p><span className="font-medium">Lead Stage:</span> {selectedCall.lead_stage || 'Not set'}</p>
+                  <p><span className="font-medium">Appointment:</span> {
+                    selectedCall.appointment_date ? 
+                    format(parseISO(selectedCall.appointment_date), 'PPp') : 
+                    'Not scheduled'
+                  }</p>
+                </div>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 };
 
