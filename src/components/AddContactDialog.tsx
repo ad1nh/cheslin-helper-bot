@@ -9,8 +9,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Contact {
   name: string;
@@ -32,7 +33,7 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
   const [status, setStatus] = useState<"hot" | "warm" | "cold">("warm");
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !phone) {
       toast({
@@ -43,23 +44,47 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
       return;
     }
 
-    onAddContact({
-      name,
-      phone,
-      propertyInterest,
-      status,
-    });
+    try {
+      const { data, error } = await supabase
+        .from('clients')
+        .insert({
+          name,
+          phone,
+          property_interest: propertyInterest,
+          status,
+          email: '',
+          last_contact: new Date().toISOString().split('T')[0]
+        })
+        .select()
+        .single();
 
-    setName("");
-    setPhone("");
-    setPropertyInterest("");
-    setStatus("warm");
-    setOpen(false);
+      if (error) throw error;
 
-    toast({
-      title: "Success",
-      description: `${type === "lead" ? "Lead" : type === "viewing" ? "Contact" : "Client"} added successfully`,
-    });
+      onAddContact({
+        name,
+        phone,
+        propertyInterest,
+        status,
+      });
+
+      setName("");
+      setPhone("");
+      setPropertyInterest("");
+      setStatus("warm");
+      setOpen(false);
+
+      toast({
+        title: "Success",
+        description: `${type === "lead" ? "Lead" : type === "viewing" ? "Contact" : "Client"} added successfully`,
+      });
+    } catch (error) {
+      console.error('Error adding contact:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add contact",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
