@@ -6,6 +6,7 @@ import { analyzeBlandAICall } from "@/utils/blandAIAnalysis";
 import { useState } from "react";
 import CampaignNameInput from "./campaign-deployment/CampaignNameInput";
 import PropertyDetailsInput from "./campaign-deployment/PropertyDetailsInput";
+import { LeadStage } from '@/types/lead';
 
 interface CampaignDeploymentProps {
   selectedContacts: any[];
@@ -31,7 +32,7 @@ const CampaignDeployment = ({
           name: contact.name,
           phone: contact.phone,
           property_interest: propertyDetails,
-          status: 'warm',
+          status: 'New' as LeadStage,
           user_id: userId
         })
         .select()
