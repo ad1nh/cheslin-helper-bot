@@ -1,31 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PhoneCall, Phone, ArrowLeftRight, Bell } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallStats } from "@/hooks/useCallStats";
 
 const StatsCards = () => {
-  const { data: stats } = useQuery({
-    queryKey: ["call-stats"],
-    queryFn: async () => {
-      const { data: calls, error } = await supabase
-        .from("campaign_calls")
-        .select("*");
-
-      if (error) throw error;
-
-      const total = calls.length;
-      const connected = calls.filter(call => call.status === 'completed').length;
-      const callbacks = calls.filter(call => call.outcome === 'callback').length;
-      const appointments = calls.filter(call => call.appointment_date).length;
-
-      return {
-        total,
-        connected,
-        callbacks,
-        appointments
-      };
-    }
-  });
+  const { data: stats } = useCallStats();
 
   return (
     <div className="grid grid-cols-4 gap-4">
