@@ -12,9 +12,9 @@ interface LeadDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   lead: {
-    id: number;
+    id: string;
     name: string;
-    status: "hot" | "warm" | "cold";
+    status: string;
     phone: string;
     lastContact: string;
     propertyInterest: string;

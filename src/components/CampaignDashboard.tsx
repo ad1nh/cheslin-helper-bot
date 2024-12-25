@@ -73,10 +73,9 @@ const CampaignDashboard = () => {
                 <BarChart data={appointmentData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="date" />
-                  <YAxis />
+                  <YAxis domain={[0, Math.max(5, ...appointmentData.map(d => d.total))]} allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="interested" fill="#10B981" name="Interested" />
-                  <Bar dataKey="hot" fill="#047857" name="Hot Leads" />
+                  <Bar dataKey="total" fill="#047857" name="Total Appointments" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
