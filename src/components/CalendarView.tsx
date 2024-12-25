@@ -10,6 +10,7 @@ import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
 import { format, parseISO, isSameDay } from "date-fns";
 import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
+import WeekView from "./WeekView";
 
 interface Appointment {
   id: string;
@@ -21,12 +22,17 @@ interface Appointment {
 }
 
 interface Lead {
+  id: string;
+  name: string;
   status: LeadStage;
-  // ... other properties
+  phone: string;
+  lastContact: string;
+  propertyInterest: string;
 }
 
 const CalendarView = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('week');
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const { toast } = useToast();
@@ -99,8 +105,8 @@ const CalendarView = () => {
   };
 
   const appointmentsForDate = appointments.filter((apt) => {
-    if (!date || !apt.date) return false;
-    return isSameDay(apt.date, date);
+    if (!selectedDate || !apt.date) return false;
+    return isSameDay(apt.date, selectedDate);
   });
 
   console.log("Appointments for selected date:", appointmentsForDate);
@@ -108,74 +114,97 @@ const CalendarView = () => {
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold">Calendar</h2>
-        <Button onClick={handleGoogleSync} variant="outline">
-          <CalendarIcon className="h-4 w-4 mr-2" />
-          Sync with Google Calendar
-        </Button>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Calendar
-            mode="single"
-            selected={date}
-            onSelect={setDate}
-            className="rounded-md border"
-          />
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold tracking-tight">Calendar</h2>
+          <p className="text-sm text-muted-foreground">Upcoming appointments and viewings</p>
         </div>
-        <div>
-          <h3 className="text-lg font-medium mb-4">
-            Appointments for {date ? format(date, 'MMMM do, yyyy') : 'today'}
-          </h3>
-          <div className="space-y-4">
-            {appointmentsForDate.map((apt) => (
-              <Card key={apt.id} className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 
-                      className="font-medium cursor-pointer hover:text-primary"
-                      onClick={() => setSelectedClient({
-                        id: apt.id,
-                        name: apt.client,
-                        status: "Warm" as LeadStage,
-                        phone: "(555) 123-4567",
-                        lastContact: format(apt.date, 'yyyy-MM-dd'),
-                        propertyInterest: apt.property,
-                      })}
-                    >
-                      {apt.client}
-                    </h4>
-                    <p 
-                      className="text-sm text-muted-foreground cursor-pointer hover:text-primary"
-                      onClick={() => setSelectedProperty({
-                        id: apt.id,
-                        address: apt.property,
-                        price: 500000,
-                        type: "House",
-                        bedrooms: 3,
-                        bathrooms: 2,
-                        status: "available",
-                        sellerId: 1,
-                        interestedBuyers: [1, 2],
-                      })}
-                    >
-                      Property: {apt.property}
+        <div className="space-x-2">
+          <Button 
+            variant={viewMode === 'day' ? 'default' : 'outline'}
+            onClick={() => setViewMode('day')}
+          >
+            Day
+          </Button>
+          <Button 
+            variant={viewMode === 'week' ? 'default' : 'outline'}
+            onClick={() => setViewMode('week')}
+          >
+            Week
+          </Button>
+        </div>
+      </div>
+
+      {viewMode === 'week' ? (
+        <WeekView 
+          appointments={appointments} 
+          selectedDate={selectedDate}
+          onSelectClient={setSelectedClient}
+          onSelectProperty={setSelectedProperty}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border"
+            />
+          </div>
+          <div>
+            <h3 className="text-lg font-medium mb-4">
+              Appointments for {selectedDate ? format(selectedDate, 'MMMM do, yyyy') : 'today'}
+            </h3>
+            <div className="space-y-4">
+              {appointmentsForDate.map((apt) => (
+                <Card key={apt.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 
+                        className="font-medium cursor-pointer hover:text-primary"
+                        onClick={() => setSelectedClient({
+                          id: apt.id,
+                          name: apt.client,
+                          status: "Warm" as LeadStage,
+                          phone: "(555) 123-4567",
+                          lastContact: format(apt.date, 'yyyy-MM-dd'),
+                          propertyInterest: apt.property,
+                        })}
+                      >
+                        {apt.client}
+                      </h4>
+                      <p 
+                        className="text-sm text-muted-foreground cursor-pointer hover:text-primary"
+                        onClick={() => setSelectedProperty({
+                          id: apt.id,
+                          address: apt.property,
+                          price: 500000,
+                          type: "House",
+                          bedrooms: 3,
+                          bathrooms: 2,
+                          status: "available",
+                          sellerId: 1,
+                          interestedBuyers: [1, 2],
+                        })}
+                      >
+                        Property: {apt.property}
+                      </p>
+                    </div>
+                    <p className="text-sm font-medium">
+                      {apt.time}
                     </p>
                   </div>
-                  <p className="text-sm font-medium">
-                    {apt.time}
-                  </p>
-                </div>
-              </Card>
-            ))}
-            {appointmentsForDate.length === 0 && (
-              <p className="text-muted-foreground text-center py-4">
-                No appointments scheduled for this date
-              </p>
-            )}
+                </Card>
+              ))}
+              {appointmentsForDate.length === 0 && (
+                <p className="text-muted-foreground text-center py-4">
+                  No appointments scheduled for this date
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {selectedClient && (
         <LeadDetailsDialog
