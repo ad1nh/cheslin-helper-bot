@@ -71,6 +71,10 @@ const CalendarView = () => {
 
           // Parse the appointment_date string into a Date object
           const appointmentDate = parseISO(call.appointment_date);
+          // Convert times ending in "PM" to 24-hour format
+          if (call.appointment_date.includes('PM')) {
+            appointmentDate.setHours(appointmentDate.getHours() + 12);
+          }
           console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
           
           if (isNaN(appointmentDate.getTime())) {
@@ -92,7 +96,13 @@ const CalendarView = () => {
         }
       }).filter(Boolean); // Remove null entries
 
-      console.log("Transformed appointments:", transformedAppointments);
+      console.log("All transformed appointments:", transformedAppointments.map(apt => ({
+        id: apt.id,
+        client: apt.client,
+        date: format(apt.date, 'yyyy-MM-dd HH:mm'),
+        property: apt.property
+      })));
+
       return transformedAppointments;
     },
   });
@@ -105,11 +115,17 @@ const CalendarView = () => {
   };
 
   const appointmentsForDate = appointments.filter((apt) => {
-    if (!selectedDate || !apt.date) return false;
-    return isSameDay(apt.date, selectedDate);
+    const matches = isSameDay(apt.date, selectedDate);
+    console.log(`Day view filtering - Appointment ${apt.id}:`, {
+      client: apt.client,
+      appointmentDate: format(apt.date, 'yyyy-MM-dd HH:mm'),
+      selectedDate: format(selectedDate, 'yyyy-MM-dd'),
+      matches
+    });
+    return matches;
   });
 
-  console.log("Appointments for selected date:", appointmentsForDate);
+  console.log(`Day view found ${appointmentsForDate.length} appointments`);
 
   return (
     <Card className="p-6">
