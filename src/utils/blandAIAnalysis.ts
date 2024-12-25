@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 
 interface CallAnalysisResponse {
   transcripts: Array<{
@@ -123,6 +124,13 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       }
     }
 
+    // Check if there's general interest in booking
+    const hasBookingInterest = userResponses.some(response => 
+      response.toLowerCase().includes('interested') || 
+      response.toLowerCase().includes('would like to') ||
+      response.toLowerCase().includes('want to see')
+    );
+
     // Check if we found an appointment in the conversation
     const hasAppointment = userResponses.some(response => {
       const isPositive = response.toLowerCase().includes('yes');
@@ -146,12 +154,20 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       callId
     });
 
+    const determineLeadStage = (hasAppointment: boolean, hasInterest: boolean): LeadStage => {
+      if (hasAppointment) return 'Hot';
+      if (hasInterest) return 'Warm';
+      return 'Cold';
+    };
+
+    const leadStage = determineLeadStage(hasAppointment, hasBookingInterest);
+
     // Update the campaign call with the analysis results
     const { data: updatedCall, error: updateError } = await supabase
       .from('campaign_calls')
       .update({
         outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-        lead_stage: hasAppointment ? 'Hot' : 'Warm',
+        lead_stage: leadStage,
         appointment_date: appointmentDate,
         status: 'completed'
       })
@@ -168,7 +184,7 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
 
     console.log("Updating campaign call with:", {
       outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-      lead_stage: hasAppointment ? 'Hot' : 'Warm',
+      lead_stage: leadStage,
       appointment_date: appointmentDate,
       status: 'completed'
     });

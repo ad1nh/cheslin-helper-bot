@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from 'date-fns';
+import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 
 const processLeadStages = (calls: any[]) => {
   // Only process completed calls
@@ -18,18 +19,12 @@ const processLeadStages = (calls: any[]) => {
   const total = Object.values(stages).reduce((sum: number, val: number) => sum + val, 0);
 
   return Object.entries(stages)
-    .filter(([_, value]) => value > 0) // Only show non-zero values
+    .filter(([_, value]) => value > 0)
     .map(([name, value]) => ({
       name,
       value,
       percentage: `${((value / (total || 1)) * 100).toFixed(1)}%`,
-      color: {
-        'Hot': '#047857',
-        'Warm': '#10B981',
-        'Cold': '#6B7280',
-        'New Lead': '#3B82F6',
-        'Not Interested': '#EF4444'
-      }[name]
+      color: LEAD_STAGE_COLORS[name.replace(' ', '') as keyof typeof LEAD_STAGE_COLORS] || LEAD_STAGE_COLORS['Cold']
     }));
 };
 
@@ -42,14 +37,12 @@ const processAppointmentData = (appointments: any[]) => {
       const existingWeek = acc.find(item => item.date === weekKey);
       if (existingWeek) {
         existingWeek.total += 1;
-        existingWeek.confirmed = (existingWeek.confirmed || 0) + (call.lead_stage === 'Hot' ? 1 : 0);
-        existingWeek.scheduled = (existingWeek.scheduled || 0) + (call.outcome === 'Appointment scheduled' ? 1 : 0);
+        existingWeek.color = getLeadStageColor('warm');
       } else {
         acc.push({
           date: weekKey,
           total: 1,
-          confirmed: call.lead_stage === 'Hot' ? 1 : 0,
-          scheduled: call.outcome === 'Appointment scheduled' ? 1 : 0
+          color: getLeadStageColor('warm'),
         });
       }
     } catch (error) {

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
 import { format, parseISO, isSameDay } from "date-fns";
+import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 
 interface Appointment {
   id: string;
@@ -17,6 +18,11 @@ interface Appointment {
   client: string;
   property: string;
   time: string;
+}
+
+interface Lead {
+  status: LeadStage;
+  // ... other properties
 }
 
 const CalendarView = () => {
@@ -131,7 +137,7 @@ const CalendarView = () => {
                       onClick={() => setSelectedClient({
                         id: apt.id,
                         name: apt.client,
-                        status: "warm",
+                        status: "Warm" as LeadStage,
                         phone: "(555) 123-4567",
                         lastContact: format(apt.date, 'yyyy-MM-dd'),
                         propertyInterest: apt.property,
