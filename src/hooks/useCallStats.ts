@@ -1,49 +1,62 @@
 // src/hooks/useCallStats.ts
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from 'date-fns';
 
 const processLeadStages = (calls: any[]) => {
-  const appointmentCalls = calls.filter(call => 
-    call.outcome === "Appointment scheduled" && call.appointment_date
-  );
+  // Only process completed calls
+  const completedCalls = calls.filter(call => call.status === 'completed');
+  
+  const stages = {
+    'New Lead': completedCalls.filter(call => !call.lead_stage).length,
+    'Hot': completedCalls.filter(call => call.lead_stage === 'Hot').length,
+    'Warm': completedCalls.filter(call => call.lead_stage === 'Warm').length,
+    'Cold': completedCalls.filter(call => call.lead_stage === 'Cold').length,
+    'Not Interested': completedCalls.filter(call => call.outcome === 'not interested').length
+  };
 
-  const leadStages = appointmentCalls.reduce((acc: any, call) => {
-    if (call.lead_stage) {
-      acc[call.lead_stage] = (acc[call.lead_stage] || 0) + 1;
-    }
-    return acc;
-  }, {});
+  const total = Object.values(stages).reduce((sum: number, val: number) => sum + val, 0);
 
-  return Object.entries(leadStages).map(([name, value]) => ({
-    name,
-    value,
-    percentage: `${((Number(value) / appointmentCalls.length) * 100).toFixed(1)}%`,
-    color: name === 'Hot' ? '#047857' : name === 'Warm' ? '#10B981' : '#E5E7EB',
-  }));
+  return Object.entries(stages)
+    .filter(([_, value]) => value > 0) // Only show non-zero values
+    .map(([name, value]) => ({
+      name,
+      value,
+      percentage: `${((value / (total || 1)) * 100).toFixed(1)}%`,
+      color: {
+        'Hot': '#047857',
+        'Warm': '#10B981',
+        'Cold': '#6B7280',
+        'New Lead': '#3B82F6',
+        'Not Interested': '#EF4444'
+      }[name]
+    }));
 };
 
 const processAppointmentData = (appointments: any[]) => {
   return appointments.reduce((acc: any[], call) => {
     try {
       const date = new Date(call.appointment_date);
-      const dateKey = `${date.getDate()}/${date.getMonth() + 1}`;
+      const weekKey = format(date, 'MMM d');
       
-      const existingDate = acc.find(item => item.date === dateKey);
-      if (existingDate) {
-        existingDate.interested += 1;
-        if (call.lead_stage === 'Hot') existingDate.hot += 1;
+      const existingWeek = acc.find(item => item.date === weekKey);
+      if (existingWeek) {
+        existingWeek.total += 1;
+        existingWeek.confirmed = (existingWeek.confirmed || 0) + (call.lead_stage === 'Hot' ? 1 : 0);
+        existingWeek.scheduled = (existingWeek.scheduled || 0) + (call.outcome === 'Appointment scheduled' ? 1 : 0);
       } else {
         acc.push({
-          date: dateKey,
-          interested: 1,
-          hot: call.lead_stage === 'Hot' ? 1 : 0
+          date: weekKey,
+          total: 1,
+          confirmed: call.lead_stage === 'Hot' ? 1 : 0,
+          scheduled: call.outcome === 'Appointment scheduled' ? 1 : 0
         });
       }
     } catch (error) {
       console.error("Error processing appointment date:", error);
     }
     return acc;
-  }, []);
+  }, []).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 };
 
 export const useCallStats = () => {
@@ -63,18 +76,15 @@ export const useCallStats = () => {
 
       if (error) throw error;
 
-      const total = calls.length;
-      const connected = calls.filter(call => call.status === 'completed').length;
-      const callbacks = calls.filter(call => call.outcome === 'callback').length;
       const appointments = calls.filter(call => 
         call.outcome === "Appointment scheduled" && call.appointment_date
       );
 
       return {
         calls,
-        total,
-        connected,
-        callbacks,
+        total: calls.length,
+        connected: calls.filter(call => call.status === 'completed').length,
+        callbacks: calls.filter(call => call.outcome === 'callback').length,
         appointments: appointments.length,
         leadTagsData: processLeadStages(calls),
         appointmentData: processAppointmentData(appointments)

@@ -2,46 +2,43 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PhoneCall, Calendar, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddContactDialog from "./AddContactDialog";
 import LeadDetailsDialog from "./LeadDetailsDialog";
+import { useCallStats } from "@/hooks/useCallStats";
+import { supabase } from "@/lib/supabase";
 
 interface Lead {
-  id: number;
+  id: string;
   name: string;
-  status: "hot" | "warm" | "cold";
+  status: string;
   phone: string;
   lastContact: string;
   propertyInterest: string;
 }
 
+const transformCallToLead = (call: any): Lead => ({
+  id: call.id,
+  name: call.contact_name || 'Unknown',
+  status: call.lead_stage?.toLowerCase() || 'new',
+  phone: call.phone_number || '',
+  lastContact: call.created_at,
+  propertyInterest: call.campaigns?.property_details || 'Not specified'
+});
+
 const LeadManagement = () => {
-  const [leads, setLeads] = useState<Lead[]>([
-    {
-      id: 1,
-      name: "John Smith",
-      status: "hot",
-      phone: "+1 (555) 123-4567",
-      lastContact: "2024-04-10",
-      propertyInterest: "3 bedroom house in downtown",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      status: "warm",
-      phone: "+1 (555) 234-5678",
-      lastContact: "2024-04-09",
-      propertyInterest: "2 bedroom apartment near park",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      status: "cold",
-      phone: "+1 (555) 345-6789",
-      lastContact: "2024-04-08",
-      propertyInterest: "Luxury condo with ocean view",
-    },
-  ]);
+  const { data: stats } = useCallStats();
+  const [leads, setLeads] = useState<Lead[]>([]);
+
+  // Update leads when stats change
+  useEffect(() => {
+    if (stats?.calls) {
+      const transformedLeads = stats.calls
+        .filter(call => call.status === 'completed')
+        .map(transformCallToLead);
+      setLeads(transformedLeads);
+    }
+  }, [stats]);
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
@@ -58,13 +55,27 @@ const LeadManagement = () => {
     }
   };
 
-  const handleAddLead = (newLead: Omit<Lead, "id" | "lastContact">) => {
-    const lead: Lead = {
-      ...newLead,
-      id: leads.length + 1,
-      lastContact: new Date().toISOString().split("T")[0],
-    };
-    setLeads([...leads, lead]);
+  const handleAddLead = async (newLeadData: Omit<Lead, "id" | "lastContact">) => {
+    try {
+      const { data, error } = await supabase
+        .from('campaign_calls')
+        .insert([{
+          contact_name: newLeadData.name,
+          phone_number: newLeadData.phone,
+          lead_stage: newLeadData.status.toUpperCase(),
+          status: 'completed',
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newLead = transformCallToLead(data);
+      setLeads(prevLeads => [...prevLeads, newLead]);
+    } catch (error) {
+      console.error('Error adding lead:', error);
+    }
   };
 
   return (

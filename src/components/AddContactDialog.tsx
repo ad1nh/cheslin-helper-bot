@@ -21,8 +21,13 @@ interface Contact {
 }
 
 interface AddContactDialogProps {
-  onAddContact: (contact: Contact) => void;
-  type: "lead" | "viewing" | "client";
+  type: "lead" | "client";
+  onAddContact: (contact: {
+    name: string;
+    phone: string;
+    status: string;
+    propertyInterest?: string;
+  }) => void;
 }
 
 const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
@@ -32,6 +37,10 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
   const [propertyInterest, setPropertyInterest] = useState("");
   const [status, setStatus] = useState<"hot" | "warm" | "cold">("warm");
   const { toast } = useToast();
+
+  const getTypeLabel = (type: "lead" | "client") => {
+    return type === "lead" ? "Lead" : "Client";
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +84,7 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
 
       toast({
         title: "Success",
-        description: `${type === "lead" ? "Lead" : type === "viewing" ? "Contact" : "Client"} added successfully`,
+        description: `${getTypeLabel(type)} added successfully`,
       });
     } catch (error) {
       console.error('Error adding contact:', error);
@@ -90,11 +99,11 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Add New {type === "lead" ? "Lead" : type === "viewing" ? "Contact" : "Client"}</Button>
+        <Button variant="outline">Add New {getTypeLabel(type)}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New {type === "lead" ? "Lead" : type === "viewing" ? "Contact" : "Client"}</DialogTitle>
+          <DialogTitle>Add New {getTypeLabel(type)}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
