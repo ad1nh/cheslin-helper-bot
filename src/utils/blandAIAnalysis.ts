@@ -166,6 +166,13 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
 
     console.log("Successfully updated campaign call:", updatedCall);
 
+    console.log("Updating campaign call with:", {
+      outcome: hasAppointment ? "Appointment scheduled" : data.summary,
+      lead_stage: hasAppointment ? 'Hot' : 'Warm',
+      appointment_date: appointmentDate,
+      status: 'completed'
+    });
+
     return data as CallAnalysisResponse;
   } catch (error) {
     console.error("Error analyzing call:", error);

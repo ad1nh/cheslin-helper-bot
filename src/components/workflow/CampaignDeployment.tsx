@@ -128,18 +128,20 @@ const CampaignDeployment = ({
                 let appointmentDate = null;
 
                 for (const transcript of analysisResult.transcripts) {
-                  if (transcript.user === 'user' && 
-                      transcript.text.toLowerCase().includes('tomorrow') && 
-                      transcript.text.toLowerCase().includes('pm')) {
+                  if (transcript.user === 'user') {
                     const match = transcript.text.match(appointmentTimeRegex);
                     if (match) {
-                      const tomorrow = new Date();
-                      tomorrow.setDate(tomorrow.getDate() + 1);
+                      const date = new Date();
+                      if (transcript.text.toLowerCase().includes('tomorrow')) {
+                        date.setDate(date.getDate() + 1);
+                      }
                       const hour = parseInt(match[1]);
-                      tomorrow.setHours(hour + 12); // Add 12 for PM
-                      tomorrow.setMinutes(0);
-                      appointmentDate = tomorrow.toISOString();
+                      const isPM = transcript.text.toLowerCase().includes('pm');
+                      date.setHours(isPM ? hour + 12 : hour);
+                      date.setMinutes(0);
+                      appointmentDate = date.toISOString();
                       console.log("Found appointment date:", appointmentDate);
+                      break; // Exit loop once we find a date
                     }
                   }
                 }
