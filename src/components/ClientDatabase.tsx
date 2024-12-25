@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import AddContactDialog from "./AddContactDialog";
 import LeadDetailsDialog from "./LeadDetailsDialog";
+import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 
 interface Client {
   id: number;
@@ -50,16 +51,7 @@ const ClientDatabase = () => {
   ]);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "hot":
-        return "bg-success";
-      case "warm":
-        return "bg-warning";
-      case "cold":
-        return "bg-secondary";
-      default:
-        return "bg-secondary";
-    }
+    return getLeadStageColor(status);
   };
 
   const filteredClients = clients.filter((client) =>
@@ -140,7 +132,7 @@ const ClientDatabase = () => {
           open={!!selectedClient}
           onOpenChange={(open) => !open && setSelectedClient(null)}
           lead={{
-            id: selectedClient.id,
+            id: selectedClient.id.toString(),
             name: selectedClient.name,
             status: selectedClient.status,
             phone: selectedClient.phone,

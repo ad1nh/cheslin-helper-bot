@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StatsCards from "./dashboard/StatsCards";
 import CalendarView from "./CalendarView";
 import { useCallStats } from "@/hooks/useCallStats";
+import { LEAD_STAGE_COLORS } from "@/types/lead";
 
 const CampaignDashboard = () => {
   const { data: campaigns } = useQuery({
@@ -75,7 +76,11 @@ const CampaignDashboard = () => {
                   <XAxis dataKey="date" />
                   <YAxis domain={[0, Math.max(5, ...appointmentData.map(d => d.total))]} allowDecimals={false} />
                   <Tooltip />
-                  <Bar dataKey="total" fill="#047857" name="Total Appointments" />
+                  <Bar 
+                    dataKey="total" 
+                    fill="#0ea5e9"
+                    name="Total Appointments" 
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
