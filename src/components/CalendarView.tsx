@@ -145,7 +145,7 @@ const CalendarView = () => {
     const transformedClient = {
       id: clientData.id,
       name: clientData.contact_name,
-      status: (clientData.lead_stage?.toLowerCase() || 'warm') as LeadStage,
+      status: (clientData.lead_stage?.toLowerCase() || 'warm').replace(/^\w/, c => c.toUpperCase()) as LeadStage,
       phone: clientData.phone_number || '-',
       email: clientData.email || '-',
       lastContact: format(new Date(clientData.created_at), 'yyyy-MM-dd, HH:mm'),
@@ -182,7 +182,7 @@ const CalendarView = () => {
         <WeekView 
           appointments={appointments} 
           selectedDate={selectedDate}
-          onSelectClient={setSelectedClient}
+          onSelectClient={handleClientClick}
           onSelectProperty={setSelectedProperty}
         />
       ) : (
