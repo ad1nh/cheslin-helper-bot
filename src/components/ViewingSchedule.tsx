@@ -8,6 +8,7 @@ import AddContactDialog from "./AddContactDialog";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
 import { LeadStage } from "@/types/lead";
+import { format } from "date-fns";
 
 interface Viewing {
   id: string;
@@ -25,8 +26,13 @@ interface Lead {
   name: string;
   status: LeadStage;
   phone: string;
+  email?: string;
   lastContact: string;
   propertyInterest: string;
+  campaigns?: {
+    property_details: string;
+  };
+  created_at?: string;
 }
 
 interface Property {
@@ -39,6 +45,18 @@ interface Property {
   status: string;
   sellerId: number;
   interestedBuyers: number[];
+}
+
+interface CampaignCall {
+  id: string;
+  contact_name: string;
+  phone_number: string;
+  email: string | null;
+  lead_stage: string | null;
+  created_at: string;
+  campaigns?: {
+    property_details: string;
+  };
 }
 
 const ViewingSchedule = () => {
@@ -80,27 +98,69 @@ const ViewingSchedule = () => {
       .select()
       .limit(1)
       .single();
-
+  
     if (!campaign) return;
-
+  
     const { data: call, error } = await supabase
       .from('campaign_calls')
       .insert({
         contact_name: contact.name,
         phone_number: contact.phone,
+        email: contact.email,
         campaign_id: campaign.id,
         status: 'pending',
-        appointment_date: new Date().toISOString()
+        appointment_date: new Date().toISOString(),
+        lead_status: 'Warm'
       })
       .select()
       .maybeSingle();
-
+  
     if (error) {
       console.error('Error adding viewing:', error);
       return;
     }
-
+  
     refetch();
+  };
+
+  const handleClientClick = async (clientId: string) => {
+    console.log("Clicking client with ID:", clientId);
+    
+    const { data: clientData, error } = await supabase
+      .from('campaign_calls')
+      .select(`
+        id,
+        contact_name,
+        phone_number,
+        email,
+        lead_stage,
+        created_at,
+        campaigns (
+          property_details
+        )
+      `)
+      .eq('id', clientId)
+      .single<CampaignCall>();
+
+    if (error || !clientData) {
+      console.error('Error fetching client details:', error);
+      return;
+    }
+
+    const transformedClient = {
+      id: clientData.id,
+      name: clientData.contact_name,
+      status: (clientData.lead_stage?.toLowerCase() || 'warm') as LeadStage,
+      phone: clientData.phone_number || '-',
+      email: clientData.email || '-',
+      lastContact: format(new Date(clientData.created_at), 'yyyy-MM-dd, HH:mm'),
+      propertyInterest: clientData.campaigns?.property_details || 'Not specified',
+      campaigns: clientData.campaigns || undefined,
+      created_at: clientData.created_at
+    };
+    
+    console.log("Transformed client data:", transformedClient);
+    setSelectedClient(transformedClient);
   };
 
   const getStatusColor = (status: string) => {
@@ -128,14 +188,7 @@ const ViewingSchedule = () => {
               <div>
                 <h3 
                   className="font-semibold cursor-pointer hover:text-primary"
-                  onClick={() => setSelectedClient({
-                    id: viewing.clientId,
-                    name: viewing.clientName,
-                    status: "Warm" as LeadStage,
-                    phone: "(555) 123-4567",
-                    lastContact: viewing.date,
-                    propertyInterest: viewing.property,
-                  })}
+                  onClick={() => handleClientClick(viewing.clientId)}
                 >
                   {viewing.clientName}
                 </h3>
@@ -173,14 +226,7 @@ const ViewingSchedule = () => {
         <LeadDetailsDialog
           open={!!selectedClient}
           onOpenChange={(open) => !open && setSelectedClient(null)}
-          lead={{
-            id: selectedClient.id.toString(),
-            name: selectedClient.name,
-            status: "warm",
-            phone: selectedClient.phone,
-            lastContact: new Date().toISOString().split('T')[0],
-            propertyInterest: selectedClient.propertyInterest || "Not specified"
-          }}
+          lead={selectedClient}
         />
       )}
 

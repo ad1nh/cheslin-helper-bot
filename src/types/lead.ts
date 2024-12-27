@@ -20,3 +20,17 @@ export const getLeadStageColor = (stage: LeadStage | string | null) => {
       return 'bg-blue-500';
   }
 };
+
+export interface Lead {
+  id: string;
+  name: string;
+  status: LeadStage;
+  phone: string;
+  email?: string;
+  lastContact: string;
+  propertyInterest: string;
+  campaigns?: {
+    property_details: string;
+  };
+  created_at?: string;
+}

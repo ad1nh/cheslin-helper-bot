@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { getLeadStageColor } from "@/types/lead";
 
 interface CallDetails {
   id: string;
@@ -43,6 +44,29 @@ const CallTrackingTab = () => {
       return data;
     },
   });
+
+  const getLeadStage = (call: any) => {
+    if (call.outcome === 'Appointment scheduled' && call.appointment_date) {
+      return 'Warm';
+    }
+    if (call.status === 'initiated') {
+      return 'Cold';
+    }
+    return call.lead_stage || 'Cold';
+  };
+
+  const getLeadStageVariant = (stage: string) => {
+    switch (stage.toLowerCase()) {
+      case 'hot':
+        return 'destructive';
+      case 'warm':
+        return 'secondary';
+      case 'cold':
+        return 'outline';
+      default:
+        return 'default';
+    }
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -91,7 +115,11 @@ const CallTrackingTab = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>{call.outcome || '-'}</TableCell>
-                  <TableCell>{call.lead_stage || '-'}</TableCell>
+                  <TableCell>
+                    <Badge variant={getLeadStageVariant(getLeadStage(call))}>
+                      {getLeadStage(call)}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     {call.appointment_date ? 
                       format(parseISO(call.appointment_date), 'PPp') : 

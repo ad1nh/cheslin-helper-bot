@@ -8,13 +8,14 @@ import LeadDetailsDialog from "./LeadDetailsDialog";
 import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface Client {
   id: number;
   name: string;
   phone: string;
   email: string;
-  status: "hot" | "warm" | "cold";
+  status: LeadStage;
   propertyInterest: string;
   lastContact: string;
 }
@@ -22,53 +23,56 @@ interface Client {
 const ClientDatabase = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
 
-  const { data: clientsData, isLoading } = useQuery({
-    queryKey: ['clients'],
+  const { data: clientsData = [] } = useQuery({
+    queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('clients')
-        .select('*');
+        .from("campaign_calls")
+        .select(`
+          *,
+          campaigns (
+            property_details
+          )
+        `)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       return data.map((client: any) => ({
         id: client.id,
-        name: client.name,
-        phone: client.phone,
-        email: client.email || '',
-        status: client.status || 'warm',
-        propertyInterest: client.property_interest || '',
-        lastContact: client.last_contact || new Date().toISOString().split('T')[0]
+        name: client.contact_name,
+        phone: client.phone_number,
+        email: client.email || "-",
+        status: client.appointment_date ? "Warm" : (client.lead_stage || "New"),
+        propertyInterest: client.campaigns?.property_details || "Not specified",
+        lastContact: format(new Date(client.created_at), 'yyyy-MM-dd, HH:mm')
       }));
     }
   });
-
-  useEffect(() => {
-    if (clientsData) {
-      setClients(clientsData);
-    }
-  }, [clientsData]);
 
   const getStatusColor = (status: string) => {
     return getLeadStageColor(status);
   };
 
-  const filteredClients = clients.filter((client) =>
+  const filteredClients = clientsData.filter((client) =>
     Object.values(client).some((value) =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
   const handleAddClient = (newClient: any) => {
-    const client: Client = {
-      ...newClient,
-      id: clients.length + 1,
-      email: newClient.email || "",
-      lastContact: new Date().toISOString().split("T")[0],
-    };
-    setClients([...clients, client]);
+    // Instead of:
+    // const client: Client = {
+    //   ...newClient,
+    //   id: clients.length + 1,
+    //   email: newClient.email || "",
+    //   lastContact: new Date().toISOString().split("T")[0],
+    // };
+    // setClients([...clients, client]);
+
+    // You should use a mutation to add the client to the database
+    // The useQuery will automatically refresh the data
   };
 
   return (
@@ -137,6 +141,7 @@ const ClientDatabase = () => {
             name: selectedClient.name,
             status: selectedClient.status,
             phone: selectedClient.phone,
+            email: selectedClient.email,
             lastContact: selectedClient.lastContact,
             propertyInterest: selectedClient.propertyInterest,
           }}

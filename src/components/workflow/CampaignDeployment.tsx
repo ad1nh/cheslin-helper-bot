@@ -31,6 +31,7 @@ const CampaignDeployment = ({
         .insert({
           name: contact.name,
           phone: contact.phone,
+          email: contact.email,
           property_interest: propertyDetails,
           status: 'New' as LeadStage,
           user_id: userId
@@ -118,6 +119,7 @@ const CampaignDeployment = ({
               campaign_id: campaign.id,
               contact_name: contact.name,
               phone_number: contact.phone,
+              email: contact.email,
               status: 'initiated',
               bland_call_id: blandAIResponse.call_id
             })
@@ -167,7 +169,9 @@ const CampaignDeployment = ({
                   .update({
                     appointment_date: appointmentDate,
                     outcome: "Appointment scheduled",
-                    status: "completed"
+                    status: "completed",
+                    lead_stage: "Warm",
+                    email: contact.email
                   })
                   .eq('bland_call_id', blandAIResponse.call_id);
                 

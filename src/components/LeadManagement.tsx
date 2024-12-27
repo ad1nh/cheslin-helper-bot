@@ -8,12 +8,14 @@ import LeadDetailsDialog from "./LeadDetailsDialog";
 import { useCallStats } from "@/hooks/useCallStats";
 import { supabase } from "@/lib/supabase";
 import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
+import { format } from 'date-fns';
 
 interface Lead {
   id: string;
   name: string;
-  status: string;
+  status: LeadStage;
   phone: string;
+  email?: string;
   lastContact: string;
   propertyInterest: string;
 }
@@ -21,9 +23,12 @@ interface Lead {
 const transformCallToLead = (call: any): Lead => ({
   id: call.id,
   name: call.contact_name || 'Unknown',
-  status: call.lead_stage?.toLowerCase() || 'new',
+  status: (call.outcome === 'Appointment scheduled' && call.appointment_date) ? 
+    'warm' : 
+    (call.lead_stage?.toLowerCase() || 'new'),
   phone: call.phone_number || '',
-  lastContact: call.created_at,
+  email: call.email || '-',
+  lastContact: format(new Date(call.created_at), 'yyyy-MM-dd, HH:mm'),
   propertyInterest: call.campaigns?.property_details || 'Not specified'
 });
 

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { LeadStage } from "@/types/lead";
 
 interface Contact {
   name: string;
@@ -25,8 +26,9 @@ interface AddContactDialogProps {
   onAddContact: (contact: {
     name: string;
     phone: string;
-    status: string;
-    propertyInterest?: string;
+    email: string;
+    status: LeadStage;
+    propertyInterest: string;
   }) => void;
 }
 
@@ -35,7 +37,8 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [propertyInterest, setPropertyInterest] = useState("");
-  const [status, setStatus] = useState<"hot" | "warm" | "cold">("warm");
+  const [status, setStatus] = useState<LeadStage>("Warm");
+  const [email, setEmail] = useState("");
   const { toast } = useToast();
 
   const getTypeLabel = (type: "lead" | "client") => {
@@ -59,9 +62,9 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
         .insert({
           name,
           phone,
+          email,
           property_interest: propertyInterest,
           status,
-          email: '',
           last_contact: new Date().toISOString().split('T')[0]
         })
         .select()
@@ -72,6 +75,7 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
       onAddContact({
         name,
         phone,
+        email,
         propertyInterest,
         status,
       });
@@ -79,7 +83,8 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
       setName("");
       setPhone("");
       setPropertyInterest("");
-      setStatus("warm");
+      setStatus("Warm");
+      setEmail("");
       setOpen(false);
 
       toast({
@@ -135,16 +140,27 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value: "hot" | "warm" | "cold") => setStatus(value)}>
+            <Select value={status} onValueChange={(value: LeadStage) => setStatus(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="hot">Hot</SelectItem>
-                <SelectItem value="warm">Warm</SelectItem>
-                <SelectItem value="cold">Cold</SelectItem>
+                <SelectItem value="Hot">Hot</SelectItem>
+                <SelectItem value="Warm">Warm</SelectItem>
+                <SelectItem value="Cold">Cold</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+              />
+            </div>
           </div>
           <Button type="submit" className="w-full">Add Contact</Button>
         </form>
