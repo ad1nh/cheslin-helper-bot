@@ -164,13 +164,13 @@ const ViewingSchedule = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-success";
-      case "pending":
-        return "bg-warning";
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-emerald-700";
+      case "initiated":
+        return "bg-gray-500";
       default:
-        return "bg-secondary";
+        return "bg-blue-500";
     }
   };
 
