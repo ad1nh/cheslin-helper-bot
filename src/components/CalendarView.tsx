@@ -52,59 +52,39 @@ const CalendarView = () => {
           )
         `)
         .not('appointment_date', 'is', null)
-        .neq('appointment_date', '');
+        .gt('appointment_date', '');
 
       if (error) {
         console.error("Error fetching appointments:", error);
         throw error;
       }
 
-      console.log("Raw appointments data:", calls);
+      return calls
+        .filter(call => call.appointment_date)
+        .map((call) => {
+          try {
+            const date = new Date(call.appointment_date);
+            
+            if (isNaN(date.getTime())) {
+              console.warn("Invalid date:", call.appointment_date);
+              return null;
+            }
 
-      // Transform campaign_calls into appointments
-      const transformedAppointments = calls.map((call) => {
-        try {
-          if (!call.appointment_date) {
-            console.log("No appointment date for call:", call.id);
+            return {
+              id: call.id,
+              title: "Property Viewing",
+              date,
+              client: call.contact_name,
+              property: call.campaigns?.property_details || "Property details not available",
+              time: format(date, 'h:mm a')
+            };
+          } catch (error) {
+            console.error("Error processing appointment:", error);
             return null;
           }
-
-          // Parse the appointment_date string into a Date object
-          const appointmentDate = parseISO(call.appointment_date);
-          // Convert times ending in "PM" to 24-hour format
-          if (call.appointment_date.includes('PM')) {
-            appointmentDate.setHours(appointmentDate.getHours() + 12);
-          }
-          console.log("Parsed appointment date:", appointmentDate, "from:", call.appointment_date);
-          
-          if (isNaN(appointmentDate.getTime())) {
-            console.error("Invalid date:", call.appointment_date);
-            return null;
-          }
-
-          return {
-            id: call.id,
-            title: "Property Viewing",
-            date: appointmentDate,
-            client: call.contact_name,
-            property: call.campaigns?.property_details || "Property details not available",
-            time: format(appointmentDate, 'h:mm a')
-          };
-        } catch (error) {
-          console.error("Error processing appointment:", error, "for call:", call);
-          return null;
-        }
-      }).filter(Boolean); // Remove null entries
-
-      console.log("All transformed appointments:", transformedAppointments.map(apt => ({
-        id: apt.id,
-        client: apt.client,
-        date: format(apt.date, 'yyyy-MM-dd HH:mm'),
-        property: apt.property
-      })));
-
-      return transformedAppointments;
-    },
+        })
+        .filter(Boolean);
+    }
   });
 
   const handleGoogleSync = () => {

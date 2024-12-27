@@ -1,48 +1,107 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MapPin, Clock } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import AddContactDialog from "./AddContactDialog";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
+import { LeadStage } from "@/types/lead";
 
 interface Viewing {
-  id: number;
+  id: string;
   clientName: string;
   property: string;
   time: string;
   date: string;
   status: "confirmed" | "pending";
-  clientId: number;
-  propertyId: number;
+  clientId: string;
+  propertyId: string;
+}
+
+interface Lead {
+  id: string;
+  name: string;
+  status: LeadStage;
+  phone: string;
+  lastContact: string;
+  propertyInterest: string;
+}
+
+interface Property {
+  id: string;
+  address: string;
+  price: number;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  status: string;
+  sellerId: number;
+  interestedBuyers: number[];
 }
 
 const ViewingSchedule = () => {
-  const [selectedClient, setSelectedClient] = useState<any>(null);
-  const [selectedProperty, setSelectedProperty] = useState<any>(null);
-  const [viewings, setViewings] = useState<Viewing[]>([
-    {
-      id: 1,
-      clientName: "John Smith",
-      property: "123 Main St",
-      time: "10:00 AM",
-      date: "2024-04-11",
-      status: "confirmed",
-      clientId: 1,
-      propertyId: 1,
-    },
-    {
-      id: 2,
-      clientName: "Sarah Johnson",
-      property: "456 Park Ave",
-      time: "2:30 PM",
-      date: "2024-04-11",
-      status: "pending",
-      clientId: 2,
-      propertyId: 2,
-    },
-  ]);
+  const [selectedClient, setSelectedClient] = useState<Lead | null>(null);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  const { data: viewings = [], refetch } = useQuery({
+    queryKey: ["viewings"],
+    queryFn: async () => {
+      const { data: calls, error } = await supabase
+        .from("campaign_calls")
+        .select(`
+          *,
+          campaigns (
+            property_details,
+            campaign_type
+          )
+        `)
+        .not('appointment_date', 'is', null);
+
+      if (error) throw error;
+
+      return calls.map(call => ({
+        id: call.id,
+        clientName: call.contact_name,
+        property: call.campaigns?.property_details || "Property TBD",
+        time: new Date(call.appointment_date!).toLocaleTimeString(),
+        date: new Date(call.appointment_date!).toLocaleDateString(),
+        status: call.status === 'completed' ? 'confirmed' : 'pending',
+        clientId: call.id,
+        propertyId: call.campaign_id || ''
+      }));
+    }
+  });
+
+  const handleAddViewing = async (contact: any) => {
+    const { data: campaign } = await supabase
+      .from('campaigns')
+      .select()
+      .limit(1)
+      .single();
+
+    if (!campaign) return;
+
+    const { data: call, error } = await supabase
+      .from('campaign_calls')
+      .insert({
+        contact_name: contact.name,
+        phone_number: contact.phone,
+        campaign_id: campaign.id,
+        status: 'pending',
+        appointment_date: new Date().toISOString()
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error adding viewing:', error);
+      return;
+    }
+
+    refetch();
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,25 +114,11 @@ const ViewingSchedule = () => {
     }
   };
 
-  const handleAddViewing = (contact: any) => {
-    const viewing = {
-      id: viewings.length + 1,
-      clientName: contact.name,
-      property: contact.propertyInterest || "Property TBD",
-      time: "Time TBD",
-      date: new Date().toISOString().split("T")[0],
-      status: "pending" as const,
-      clientId: contact.id || viewings.length + 1,
-      propertyId: 1, // Default property ID
-    };
-    setViewings([...viewings, viewing]);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Today's Viewings</h2>
-        <AddContactDialog onAddContact={handleAddViewing} type="viewing" />
+        <AddContactDialog onAddContact={handleAddViewing} type="lead" />
       </div>
 
       <div className="space-y-4">
@@ -86,7 +131,7 @@ const ViewingSchedule = () => {
                   onClick={() => setSelectedClient({
                     id: viewing.clientId,
                     name: viewing.clientName,
-                    status: "warm",
+                    status: "Warm" as LeadStage,
                     phone: "(555) 123-4567",
                     lastContact: viewing.date,
                     propertyInterest: viewing.property,
@@ -129,12 +174,12 @@ const ViewingSchedule = () => {
           open={!!selectedClient}
           onOpenChange={(open) => !open && setSelectedClient(null)}
           lead={{
-            id: selectedClient.id || Math.random(),
+            id: selectedClient.id.toString(),
             name: selectedClient.name,
             status: "warm",
             phone: selectedClient.phone,
             lastContact: new Date().toISOString().split('T')[0],
-            propertyInterest: selectedClient.property || "Not specified",
+            propertyInterest: selectedClient.propertyInterest || "Not specified"
           }}
         />
       )}
@@ -143,11 +188,21 @@ const ViewingSchedule = () => {
         <PropertyDetailsDialog
           open={!!selectedProperty}
           onOpenChange={(open) => !open && setSelectedProperty(null)}
-          property={selectedProperty}
+          property={{
+            id: parseInt(selectedProperty.id),
+            address: selectedProperty.address,
+            price: selectedProperty.price,
+            type: selectedProperty.type,
+            bedrooms: selectedProperty.bedrooms,
+            bathrooms: selectedProperty.bathrooms,
+            status: selectedProperty.status as "available" | "under-contract" | "sold",
+            sellerId: selectedProperty.sellerId,
+            interestedBuyers: selectedProperty.interestedBuyers
+          }}
           seller={{
             id: 1,
             name: "John Doe",
-            phone: "+1 (555) 123-4567",
+            phone: "+1 (555) 123-4567"
           }}
         />
       )}

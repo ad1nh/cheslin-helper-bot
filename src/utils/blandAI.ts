@@ -25,13 +25,7 @@ export const makeBlandAICall = async ({ phoneNumber, campaignType, propertyDetai
   console.log("Making Bland AI call with task:", task);
 
   try {
-    const { data: { BLAND_AI_API_KEY } } = await supabase.functions.invoke('get-secret', {
-      body: { name: 'BLAND_AI_API_KEY' }
-    });
-
-    if (!BLAND_AI_API_KEY) {
-      throw new Error('Failed to retrieve BLAND_AI_API_KEY');
-    }
+    const BLAND_AI_API_KEY = 'org_9f11dcaa4abcdf524979dd18ffbd55d11c0267c7e9f8ac1850ac4fafa1abc0e9b53d967a2ecf9d8d884969';
 
     const headers = {
       'Authorization': BLAND_AI_API_KEY,

@@ -58,9 +58,18 @@ const CampaignDeployment = ({
     }
 
     try {
+      // Log the start of deployment
+      console.log("Starting campaign deployment:", {
+        campaignName,
+        selectedContacts,
+        selectedCampaignType,
+        propertyDetails
+      });
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
+        console.error("No user found");
         toast({
           title: "Error",
           description: "You must be logged in to create a campaign",
@@ -86,8 +95,8 @@ const CampaignDeployment = ({
 
       for (const contact of selectedContacts) {
         try {
-          await storeClientData(contact, user.id);
-
+          console.log("Initiating call for contact:", contact);
+          
           const blandAIResponse = await makeBlandAICall({
             phoneNumber: contact.phone,
             campaignType: selectedCampaignType,
@@ -95,7 +104,13 @@ const CampaignDeployment = ({
             contactName: contact.name,
           });
 
-          console.log("Bland AI call initiated for:", contact.name, blandAIResponse);
+          console.log("BlandAI Response:", blandAIResponse);
+
+          if (!blandAIResponse || !blandAIResponse.call_id) {
+            throw new Error("No call_id received from BlandAI");
+          }
+
+          await storeClientData(contact, user.id);
 
           const { data: callRecord, error: callError } = await supabase
             .from('campaign_calls')
@@ -169,10 +184,10 @@ const CampaignDeployment = ({
           }, 120000);
 
         } catch (error) {
-          console.error('Error processing contact:', contact.name, error);
+          console.error('Detailed error for contact:', contact.name, error);
           toast({
             title: "Error",
-            description: `Failed to process call for ${contact.name}`,
+            description: `Failed to process call for ${contact.name}: ${error.message}`,
             variant: "destructive",
           });
         }
@@ -183,10 +198,10 @@ const CampaignDeployment = ({
         description: "Campaign deployed successfully!",
       });
     } catch (error) {
-      console.error('Error deploying campaign:', error);
+      console.error('Campaign deployment error:', error);
       toast({
         title: "Error",
-        description: "Failed to deploy campaign",
+        description: `Failed to deploy campaign: ${error.message}`,
         variant: "destructive",
       });
     }

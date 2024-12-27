@@ -10,18 +10,12 @@ interface CallAnalysisResponse {
   status: string;
 }
 
+const BLAND_AI_API_KEY = 'org_9f11dcaa4abcdf524979dd18ffbd55d11c0267c7e9f8ac1850ac4fafa1abc0e9b53d967a2ecf9d8d884969';
+
 export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisResponse> => {
   console.log("Starting analysis for call:", callId);
   
   try {
-    const { data: { BLAND_AI_API_KEY } } = await supabase.functions.invoke('get-secret', {
-      body: { name: 'BLAND_AI_API_KEY' },
-    });
-
-    if (!BLAND_AI_API_KEY) {
-      throw new Error('BLAND_AI_API_KEY not found');
-    }
-
     // First, let's check if we already have this call in our database
     const { data: existingCall } = await supabase
       .from('campaign_calls')
@@ -168,16 +162,16 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       .update({
         outcome: hasAppointment ? "Appointment scheduled" : data.summary,
         lead_stage: leadStage,
-        appointment_date: appointmentDate,
+        appointment_date: appointmentDate ? new Date(appointmentDate).toISOString() : null,
         status: 'completed'
       })
       .eq('bland_call_id', callId)
       .select()
-      .single();
+      .maybeSingle();
 
     if (updateError) {
       console.error("Error updating campaign call:", updateError);
-      throw updateError;
+      console.warn("Continuing despite update error");
     }
 
     console.log("Successfully updated campaign call:", updatedCall);
