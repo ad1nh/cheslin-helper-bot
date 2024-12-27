@@ -51,8 +51,7 @@ const CalendarView = () => {
             campaign_type
           )
         `)
-        .not('appointment_date', 'is', null)
-        .gt('appointment_date', '');
+        .not('appointment_date', 'is', null);
 
       if (error) {
         console.error("Error fetching appointments:", error);
@@ -73,7 +72,7 @@ const CalendarView = () => {
             return {
               id: call.id,
               title: "Property Viewing",
-              date,
+              date: date,
               client: call.contact_name,
               property: call.campaigns?.property_details || "Property details not available",
               time: format(date, 'h:mm a')
