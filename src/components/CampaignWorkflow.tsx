@@ -77,7 +77,7 @@ const CampaignWorkflow = () => {
               </p>
             </div>
             <div className="grid grid-cols-3 gap-6">
-              {campaignTypes.map((campaign) => (
+              {campaignTypes.map((campaign, index) => (
                 <Card
                   key={campaign.title}
                   className={`p-6 cursor-pointer transition-all ${

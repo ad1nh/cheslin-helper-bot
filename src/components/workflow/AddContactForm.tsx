@@ -49,7 +49,8 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
     try {
       const { data: clients, error } = await supabase
         .from('clients')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching clients:', error);
@@ -61,19 +62,20 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
         return;
       }
 
-      // Transform clients data to match Contact interface
       const transformedClients: Contact[] = clients.map(client => ({
         id: parseInt(client.id),
         name: client.name,
         email: client.email || '',
         phone: client.phone || '',
         propertyInterests: client.property_interest ? [client.property_interest] : [],
-        priceRange: { min: 0, max: 0 }, // Default values since we don't store this in DB yet
+        priceRange: { 
+          min: 0, 
+          max: 0 
+        },
         preferredLocations: [],
         notes: '',
       }));
 
-      console.log('Fetched clients:', transformedClients);
       setAvailableContacts(transformedClients);
     } catch (error) {
       console.error('Error in fetchClients:', error);
@@ -132,8 +134,8 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
 
         <TabsContent value="existing">
           <div className="space-y-4">
-            {availableContacts.map((contact) => (
-              <Card key={contact.id} className="p-4">
+            {availableContacts.map((contact, index) => (
+              <Card key={contact.id || `item-${index}`} className="p-4">
                 <div className="flex items-center space-x-4">
                   <Checkbox
                     checked={selectedContacts.some(c => c.id === contact.id)}

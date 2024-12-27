@@ -2,10 +2,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AddContactDialog from "./AddContactDialog";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Client {
   id: number;
@@ -20,35 +22,34 @@ interface Client {
 const ClientDatabase = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: 1,
-      name: "John Smith",
-      phone: "+1 (555) 123-4567",
-      email: "john.smith@email.com",
-      status: "hot",
-      propertyInterest: "3 bedroom house in downtown",
-      lastContact: "2024-04-10",
-    },
-    {
-      id: 2,
-      name: "Sarah Johnson",
-      phone: "+1 (555) 234-5678",
-      email: "sarah.j@email.com",
-      status: "warm",
-      propertyInterest: "2 bedroom apartment near park",
-      lastContact: "2024-04-09",
-    },
-    {
-      id: 3,
-      name: "Michael Brown",
-      phone: "+1 (555) 345-6789",
-      email: "michael.b@email.com",
-      status: "cold",
-      propertyInterest: "Luxury condo with ocean view",
-      lastContact: "2024-04-08",
-    },
-  ]);
+  const [clients, setClients] = useState<Client[]>([]);
+
+  const { data: clientsData, isLoading } = useQuery({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('clients')
+        .select('*');
+
+      if (error) throw error;
+
+      return data.map((client: any) => ({
+        id: client.id,
+        name: client.name,
+        phone: client.phone,
+        email: client.email || '',
+        status: client.status || 'warm',
+        propertyInterest: client.property_interest || '',
+        lastContact: client.last_contact || new Date().toISOString().split('T')[0]
+      }));
+    }
+  });
+
+  useEffect(() => {
+    if (clientsData) {
+      setClients(clientsData);
+    }
+  }, [clientsData]);
 
   const getStatusColor = (status: string) => {
     return getLeadStageColor(status);
