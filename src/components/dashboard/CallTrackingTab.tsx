@@ -116,7 +116,7 @@ const CallTrackingTab = () => {
                   </TableCell>
                   <TableCell>{call.outcome || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant={getLeadStageVariant(getLeadStage(call))}>
+                    <Badge className={getLeadStageColor(getLeadStage(call))}>
                       {getLeadStage(call)}
                     </Badge>
                   </TableCell>
