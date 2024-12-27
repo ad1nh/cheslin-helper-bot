@@ -16,49 +16,41 @@ interface WeekViewProps {
 }
 
 const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty }: WeekViewProps) => {
-  // Log all appointments received by WeekView
-  console.log("WeekView received appointments:", appointments.map(apt => ({
-    id: apt.id,
-    client: apt.client,
-    date: format(apt.date, 'yyyy-MM-dd HH:mm'),
-    property: apt.property
-  })));
+  // Get the week that contains the appointment date
+  const appointmentDates = appointments.map(apt => apt.date);
+  const latestAppointment = appointmentDates.length > 0 
+    ? new Date(Math.max(...appointmentDates.map(d => d.getTime())))
+    : selectedDate;
 
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
+  const weekStart = startOfWeek(latestAppointment, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
-  console.log("Week days being displayed:", weekDays.map(d => format(d, 'yyyy-MM-dd')));
+  console.log("Week range:", {
+    start: format(weekStart, 'yyyy-MM-dd'),
+    days: weekDays.map(d => format(d, 'yyyy-MM-dd')),
+    appointments: appointments.map(apt => format(apt.date, 'yyyy-MM-dd HH:mm'))
+  });
 
   const timeSlots = Array.from({ length: 9 }, (_, i) => i + 9); // 9 AM to 5 PM
 
   const getAppointmentsForTimeSlot = (day: Date, hour: number) => {
-    console.log(`\nChecking time slot: ${format(day, 'yyyy-MM-dd')} at ${hour}:00`);
-    
-    const appointmentsForSlot = appointments.filter((apt) => {
-      const aptHour = apt.date.getHours();
-      // Simple direct hour comparison - no conversion needed since we're using 24-hour internally
-      const isSameTimeSlot = aptHour === hour;
-      const isSameDayResult = isSameDay(apt.date, day);
+    return appointments.filter((apt) => {
+      const aptDate = apt.date instanceof Date ? apt.date : new Date(apt.date);
+      const aptDay = new Date(format(aptDate, 'yyyy-MM-dd'));
+      const checkingDay = new Date(format(day, 'yyyy-MM-dd'));
       
-      console.log(`Appointment ${apt.id}:`, {
-        client: apt.client,
-        appointmentDate: format(apt.date, 'yyyy-MM-dd HH:mm'),
-        appointmentHour: aptHour,
-        checkingHour: hour,
-        matchesHour: isSameTimeSlot,
-        matchesDay: isSameDayResult
-      });
+      const aptHour = aptDate.getHours();
+      const isSameTimeSlot = aptHour === hour;
+      const isSameDayResult = aptDay.getTime() === checkingDay.getTime();
 
       return isSameTimeSlot && isSameDayResult;
     });
-
-    return appointmentsForSlot;
   };
 
   return (
     <div className="overflow-x-auto">
-      <div className="min-w-[800px]">
-        <div className="grid grid-cols-6 gap-2 mb-2">
+      <div className="min-w-[1000px]">
+        <div className="grid grid-cols-8 gap-2 mb-2">
           <div className="w-20" />
           {weekDays.map((day, index) => (
             <div key={`day-${format(day, 'yyyy-MM-dd')}`} className="text-center font-medium">
@@ -68,7 +60,7 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
         </div>
 
         {timeSlots.map((hour) => (
-          <div key={`timeslot-${hour}`} className="grid grid-cols-6 gap-2 min-h-[100px]">
+          <div key={`timeslot-${hour}`} className="grid grid-cols-8 gap-2 min-h-[100px]">
             <div className="text-sm text-muted-foreground w-20">
               {format(new Date().setHours(hour, 0), 'h:mm a')}
             </div>
