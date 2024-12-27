@@ -161,7 +161,7 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       .from('campaign_calls')
       .update({
         outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-        lead_stage: leadStage,
+        lead_stage: hasAppointment ? "Warm" : leadStage,
         appointment_date: appointmentDate ? new Date(appointmentDate).toISOString() : null,
         status: 'completed'
       })
@@ -178,7 +178,7 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
 
     console.log("Updating campaign call with:", {
       outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-      lead_stage: leadStage,
+      lead_stage: hasAppointment ? "Warm" : leadStage,
       appointment_date: appointmentDate,
       status: 'completed'
     });

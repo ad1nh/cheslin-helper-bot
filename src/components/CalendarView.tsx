@@ -26,8 +26,21 @@ interface Lead {
   name: string;
   status: LeadStage;
   phone: string;
+  email?: string;
   lastContact: string;
   propertyInterest: string;
+}
+
+interface CampaignCall {
+  id: string;
+  contact_name: string;
+  phone_number: string;
+  email: string | null;
+  lead_stage: string | null;
+  created_at: string;
+  campaigns?: {
+    property_details: string;
+  };
 }
 
 const CalendarView = () => {
@@ -75,7 +88,8 @@ const CalendarView = () => {
               date: date,
               client: call.contact_name,
               property: call.campaigns?.property_details || "Property details not available",
-              time: format(date, 'h:mm a')
+              time: format(date, 'h:mm a'),
+              leadStatus: call.lead_stage || "Cold"
             };
           } catch (error) {
             console.error("Error processing appointment:", error);
@@ -105,6 +119,41 @@ const CalendarView = () => {
   });
 
   console.log(`Day view found ${appointmentsForDate.length} appointments`);
+
+  const handleClientClick = async (clientId: string) => {
+    const { data: clientData, error } = await supabase
+      .from('campaign_calls')
+      .select(`
+        id,
+        contact_name,
+        phone_number,
+        email,
+        lead_stage,
+        created_at,
+        campaigns (
+          property_details
+        )
+      `)
+      .eq('id', clientId)
+      .single<CampaignCall>();
+
+    if (error || !clientData) {
+      console.error('Error fetching client details:', error);
+      return;
+    }
+
+    const transformedClient = {
+      id: clientData.id,
+      name: clientData.contact_name,
+      status: (clientData.lead_stage?.toLowerCase() || 'warm') as LeadStage,
+      phone: clientData.phone_number || '-',
+      email: clientData.email || '-',
+      lastContact: format(new Date(clientData.created_at), 'yyyy-MM-dd, HH:mm'),
+      propertyInterest: clientData.campaigns?.property_details || 'Not specified'
+    };
+    
+    setSelectedClient(transformedClient);
+  };
 
   return (
     <Card className="p-6">
@@ -157,14 +206,7 @@ const CalendarView = () => {
                     <div>
                       <h4 
                         className="font-medium cursor-pointer hover:text-primary"
-                        onClick={() => setSelectedClient({
-                          id: apt.id,
-                          name: apt.client,
-                          status: "Warm" as LeadStage,
-                          phone: "(555) 123-4567",
-                          lastContact: format(apt.date, 'yyyy-MM-dd'),
-                          propertyInterest: apt.property,
-                        })}
+                        onClick={() => handleClientClick(apt.id)}
                       >
                         {apt.client}
                       </h4>

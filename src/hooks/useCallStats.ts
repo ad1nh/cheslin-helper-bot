@@ -11,8 +11,14 @@ const processLeadStages = (calls: any[]) => {
   const stages = {
     'New Lead': completedCalls.filter(call => !call.lead_stage).length,
     'Hot': completedCalls.filter(call => call.lead_stage === 'Hot').length,
-    'Warm': completedCalls.filter(call => call.lead_stage === 'Warm').length,
-    'Cold': completedCalls.filter(call => call.lead_stage === 'Cold').length,
+    'Warm': completedCalls.filter(call => 
+      call.lead_stage === 'Warm' || 
+      (call.outcome === 'Appointment scheduled' && call.appointment_date)
+    ).length,
+    'Cold': completedCalls.filter(call => 
+      call.lead_stage === 'Cold' && 
+      call.outcome !== 'Appointment scheduled'
+    ).length,
     'Not Interested': completedCalls.filter(call => call.outcome === 'not interested').length
   };
 

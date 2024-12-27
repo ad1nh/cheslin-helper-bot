@@ -81,14 +81,7 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
                       <div className="flex flex-col">
                         <div 
                           className="text-sm font-medium cursor-pointer hover:text-primary"
-                          onClick={() => onSelectClient({
-                            id: apt.id,
-                            name: apt.client,
-                            status: "Warm",
-                            phone: "(555) 123-4567",
-                            lastContact: format(apt.date, 'yyyy-MM-dd'),
-                            propertyInterest: apt.property,
-                          })}
+                          onClick={() => onSelectClient(apt.id)}
                         >
                           {apt.client}
                         </div>

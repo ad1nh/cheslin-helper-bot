@@ -7,7 +7,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Phone, Mail, Home } from "lucide-react";
-import { getLeadStageColor } from "@/types/lead";
+import { getLeadStageColor, LeadStage } from "@/types/lead";
 
 interface LeadDetailsDialogProps {
   open: boolean;
@@ -15,8 +15,9 @@ interface LeadDetailsDialogProps {
   lead: {
     id: string;
     name: string;
-    status: string;
+    status: LeadStage;
     phone: string;
+    email?: string;
     lastContact: string;
     propertyInterest: string;
   };
@@ -51,16 +52,18 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
               </div>
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
-                <span>example@email.com</span>
+                <span>{lead.email || '-'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Home className="h-4 w-4" />
                 <span>{lead.propertyInterest}</span>
               </div>
-              <p>Status: <Badge className={getLeadStageColor(lead.status)}>
-                {lead.status.toUpperCase()}
-              </Badge></p>
-              <p>Last Contact: {lead.lastContact}</p>
+              <div>
+                Status: <Badge className={getLeadStageColor(lead.status)}>
+                  {lead.status.toUpperCase()}
+                </Badge>
+              </div>
+              <div>Last Contact: {lead.lastContact}</div>
             </div>
           </Card>
 
