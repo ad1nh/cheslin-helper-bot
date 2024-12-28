@@ -34,7 +34,7 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
   const timeSlots = Array.from({ length: 9 }, (_, i) => i + 9); // 9 AM to 5 PM
 
   const getAppointmentsForTimeSlot = (day: Date, hour: number) => {
-    return appointments.filter((apt) => {
+    const timeSlotAppointments = appointments.filter((apt) => {
       const aptDate = apt.date instanceof Date ? apt.date : new Date(apt.date);
       const aptDay = new Date(format(aptDate, 'yyyy-MM-dd'));
       const checkingDay = new Date(format(day, 'yyyy-MM-dd'));
@@ -45,6 +45,29 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
 
       return isSameTimeSlot && isSameDayResult;
     });
+
+    // Group overlapping appointments into columns
+    const columns: typeof timeSlotAppointments[] = [];
+    timeSlotAppointments.forEach(apt => {
+      // Find first column where this appointment can fit
+      const columnIndex = columns.findIndex(column => {
+        return !column.some(existingApt => {
+          const existingTime = new Date(existingApt.date).getTime();
+          const newTime = new Date(apt.date).getTime();
+          return Math.abs(existingTime - newTime) < 3600000; // 1 hour in milliseconds
+        });
+      });
+
+      if (columnIndex === -1) {
+        // Create new column
+        columns.push([apt]);
+      } else {
+        // Add to existing column
+        columns[columnIndex].push(apt);
+      }
+    });
+
+    return { appointments: timeSlotAppointments, columns };
   };
 
   return (
@@ -65,46 +88,55 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
               {format(new Date().setHours(hour, 0), 'h:mm a')}
             </div>
             {weekDays.map((day) => {
-              const appointmentsAtTime = getAppointmentsForTimeSlot(day, hour);
+              const { columns } = getAppointmentsForTimeSlot(day, hour);
+              const totalColumns = columns.length;
               
               return (
                 <div key={day.toString()} className="relative border-t">
-                  {appointmentsAtTime.map((apt) => (
-                    <Card 
-                      key={`apt-${apt.id}-${format(apt.date, 'HH:mm')}`} 
-                      className={cn(
-                        "absolute inset-x-0 p-2 m-1",
-                        "bg-primary/10 border-l-4 border-l-primary",
-                        "hover:bg-primary/20 transition-colors"
-                      )}
-                    >
-                      <div className="flex flex-col">
-                        <div 
-                          className="text-sm font-medium cursor-pointer hover:text-primary"
-                          onClick={() => onSelectClient(apt.id)}
-                        >
-                          {apt.client}
+                  {columns.map((column, columnIndex) => 
+                    column.map(apt => (
+                      <Card 
+                        key={`apt-${apt.id}-${format(apt.date, 'HH:mm')}`} 
+                        className={cn(
+                          "absolute p-2",
+                          "bg-primary/10 border-l-4 border-l-primary",
+                          "hover:bg-primary/20 transition-colors"
+                        )}
+                        style={{
+                          left: `${(columnIndex * 100) / totalColumns}%`,
+                          width: `${100 / totalColumns}%`,
+                          top: '0',
+                          bottom: '0'
+                        }}
+                      >
+                        <div className="flex flex-col h-full">
+                          <div 
+                            className="text-sm font-medium cursor-pointer hover:text-primary truncate"
+                            onClick={() => onSelectClient(apt.id)}
+                          >
+                            {apt.client}
+                          </div>
+                          <div 
+                            className="text-xs text-muted-foreground truncate cursor-pointer hover:text-primary"
+                            onClick={() => onSelectProperty({
+                              id: apt.id,
+                              address: apt.property,
+                              price: 500000,
+                              type: "House",
+                              bedrooms: 3,
+                              bathrooms: 2,
+                              status: "available",
+                              sellerId: 1,
+                              interestedBuyers: [1, 2],
+                            })}
+                          >
+                            {apt.property}
+                          </div>
+                          <div className="text-xs font-medium">{apt.time}</div>
                         </div>
-                        <div 
-                          className="text-xs text-muted-foreground truncate cursor-pointer hover:text-primary"
-                          onClick={() => onSelectProperty({
-                            id: apt.id,
-                            address: apt.property,
-                            price: 500000,
-                            type: "House",
-                            bedrooms: 3,
-                            bathrooms: 2,
-                            status: "available",
-                            sellerId: 1,
-                            interestedBuyers: [1, 2],
-                          })}
-                        >
-                          {apt.property}
-                        </div>
-                        <div className="text-xs font-medium">{apt.time}</div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))
+                  )}
                 </div>
               );
             })}
