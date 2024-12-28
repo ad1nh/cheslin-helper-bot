@@ -128,6 +128,19 @@ const CampaignDeployment = ({
 
           if (callError) throw callError;
 
+          const { error: interactionError } = await supabase
+            .from('interactions')
+            .insert({
+              client_id: callRecord.id,
+              type: 'Appointment Scheduled',
+              notes: `Method: Phone Call - scheduled with ${contact.name}`,
+              created_at: new Date().toISOString()
+            });
+
+          if (interactionError) {
+            console.error("Error creating interaction:", interactionError);
+          }
+
           setTimeout(async () => {
             try {
               const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);

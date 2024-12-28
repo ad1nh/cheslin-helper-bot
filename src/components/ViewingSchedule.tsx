@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Clock } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import AddContactDialog from "./AddContactDialog";
@@ -63,6 +63,18 @@ const ViewingSchedule = () => {
   const [selectedClient, setSelectedClient] = useState<Lead | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
+  useEffect(() => {
+    const checkInteractions = async () => {
+      const { data, error } = await supabase
+        .from('interactions')
+        .select('*');
+      
+      console.log("All interactions in database:", { data, error });
+    };
+
+    checkInteractions();
+  }, []);
+
   const { data: viewings = [], refetch } = useQuery({
     queryKey: ["viewings"],
     queryFn: async () => {
@@ -101,6 +113,7 @@ const ViewingSchedule = () => {
   
     if (!campaign) return;
   
+    // First create the campaign call
     const { data: call, error } = await supabase
       .from('campaign_calls')
       .insert({
@@ -110,14 +123,41 @@ const ViewingSchedule = () => {
         campaign_id: campaign.id,
         status: 'pending',
         appointment_date: new Date().toISOString(),
-        lead_status: 'Warm'
+        lead_stage: 'Warm'
       })
       .select()
-      .maybeSingle();
+      .single();
   
-    if (error) {
+    if (error || !call) {
       console.error('Error adding viewing:', error);
       return;
+    }
+  
+    console.log("Created campaign call:", call);
+  
+    // Create interaction with proper typing
+    const { error: interactionError } = await supabase
+      .from('interactions')
+      .insert({
+        client_id: call.id,
+        type: 'Viewing Scheduled',
+        notes: `Method: Email - Viewing scheduled with ${contact.name}`,
+        created_at: new Date().toISOString()
+      });
+  
+    console.log("Interaction creation attempt:", {
+      client_id: call.id,
+      error: interactionError,
+      full_interaction: {
+        client_id: call.id,
+        type: 'Viewing Scheduled',
+        notes: `Method: Email - Viewing scheduled with ${contact.name}`,
+        created_at: new Date().toISOString()
+      }
+    });
+  
+    if (interactionError) {
+      console.error('Error adding interaction:', interactionError);
     }
   
     refetch();
@@ -141,6 +181,8 @@ const ViewingSchedule = () => {
       `)
       .eq('id', clientId)
       .single<CampaignCall>();
+
+    console.log("Client data fetch result:", { clientData, error });
 
     if (error || !clientData) {
       console.error('Error fetching client details:', error);
