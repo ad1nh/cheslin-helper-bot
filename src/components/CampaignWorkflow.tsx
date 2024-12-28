@@ -4,6 +4,7 @@ import { PhoneCall, Home } from "lucide-react";
 import AddContactForm from "./workflow/AddContactForm";
 import ReviewContacts from "./workflow/ReviewContacts";
 import CampaignDeployment from "./workflow/CampaignDeployment";
+import PropertySelection from "./workflow/PropertySelection";
 
 const steps = [
   "Launch Campaign Type",
@@ -30,6 +31,7 @@ const CampaignWorkflow = () => {
   const [selectedContacts, setSelectedContacts] = useState<any[]>([]);
   const [selectedCampaignType, setSelectedCampaignType] = useState("");
   const [propertyDetails, setPropertyDetails] = useState("");
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
 
   const handleCampaignTypeSelect = (campaignType: string) => {
     console.log("Selected campaign type:", campaignType);
@@ -108,8 +110,11 @@ const CampaignWorkflow = () => {
         )}
 
         {currentStep === 2 && (
-          <ReviewContacts 
-            contacts={selectedContacts}
+          <PropertySelection 
+            onSelect={(propertyId, address) => {
+              setSelectedPropertyId(propertyId);
+              setPropertyDetails(address);
+            }}
             onNext={() => setCurrentStep(3)}
           />
         )}
@@ -119,6 +124,7 @@ const CampaignWorkflow = () => {
             selectedContacts={selectedContacts}
             selectedCampaignType={selectedCampaignType}
             propertyDetails={propertyDetails}
+            selectedPropertyId={selectedPropertyId}
             onPropertyDetailsChange={setPropertyDetails}
           />
         )}

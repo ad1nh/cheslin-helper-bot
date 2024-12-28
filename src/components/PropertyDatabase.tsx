@@ -9,21 +9,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
 interface Property {
-  id: number;
+  id: string;
   address: string;
   price: number;
   type: string;
   bedrooms: number;
   bathrooms: number;
   status: "available" | "under-contract" | "sold";
-  sellerId: number;
-  interestedBuyers: number[];
+  seller_id: string;
+  interested_buyers?: string[];
+  created_at: string;
 }
 
 interface Seller {
-  id: number;
+  id: string;
   name: string;
   phone: string;
 }
@@ -34,23 +37,22 @@ const PropertyDatabase = () => {
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const { toast } = useToast();
 
-  const [properties, setProperties] = useState<Property[]>([
-    {
-      id: 1,
-      address: "123 Main St",
-      price: 500000,
-      type: "House",
-      bedrooms: 3,
-      bathrooms: 2,
-      status: "available",
-      sellerId: 1,
-      interestedBuyers: [1, 2],
-    },
-  ]);
+  const { data: properties = [], refetch } = useQuery({
+    queryKey: ["properties"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const [sellers] = useState<Seller[]>([
     {
-      id: 1,
+      id: "123e4567-e89b-12d3-a456-426614174000",
       name: "John Doe",
       phone: "+1 (555) 123-4567",
     },
@@ -69,28 +71,44 @@ const PropertyDatabase = () => {
     }
   };
 
-  const handleAddProperty = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddProperty = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    const newProperty: Property = {
-      id: properties.length + 1,
-      address: formData.get("address") as string,
-      price: Number(formData.get("price")),
-      type: formData.get("type") as string,
-      bedrooms: Number(formData.get("bedrooms")),
-      bathrooms: Number(formData.get("bathrooms")),
-      status: "available",
-      sellerId: Number(formData.get("seller")),
-      interestedBuyers: [],
-    };
+    try {
+      const sellerId = formData.get("seller") as string;
+      if (!sellerId) throw new Error("Seller ID is required");
 
-    setProperties([...properties, newProperty]);
-    setShowAddDialog(false);
-    toast({
-      title: "Success",
-      description: "Property added successfully",
-    });
+      const { data, error } = await supabase
+        .from('properties')
+        .insert({
+          address: formData.get("address") as string,
+          price: Number(formData.get("price")),
+          type: formData.get("type") as string,
+          bedrooms: Number(formData.get("bedrooms")),
+          bathrooms: Number(formData.get("bathrooms")),
+          status: "available",
+          seller_id: sellerId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setShowAddDialog(false);
+      toast({
+        title: "Success",
+        description: "Property added successfully",
+      });
+      refetch();
+    } catch (error) {
+      console.error('Error adding property:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add property",
+        variant: "destructive",
+      });
+    }
   };
 
   const filteredProperties = properties.filter((property) =>
@@ -200,9 +218,9 @@ const PropertyDatabase = () => {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {sellers.find(s => s.id === property.sellerId)?.name}
+                  {sellers.find(s => s.id === property.seller_id)?.name}
                 </TableCell>
-                <TableCell>{property.interestedBuyers.length} buyers</TableCell>
+                <TableCell>{property.interested_buyers?.length} buyers</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -210,12 +228,16 @@ const PropertyDatabase = () => {
       </div>
 
       {selectedProperty && (
-        <PropertyDetailsDialog
-          open={!!selectedProperty}
-          onOpenChange={(open) => !open && setSelectedProperty(null)}
-          property={selectedProperty}
-          seller={sellers.find(s => s.id === selectedProperty.sellerId) || sellers[0]}
-        />
+        <>
+          {console.log("Selected Property:", selectedProperty)}
+          {console.log("Selected Seller:", sellers.find(s => s.id === selectedProperty?.seller_id))}
+          <PropertyDetailsDialog
+            open={!!selectedProperty}
+            onOpenChange={(open) => !open && setSelectedProperty(null)}
+            property={selectedProperty}
+            seller={sellers.find(s => s.id === selectedProperty.seller_id) || sellers[0]}
+          />
+        </>
       )}
     </Card>
   );

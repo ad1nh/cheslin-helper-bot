@@ -7,11 +7,14 @@ import { useState } from "react";
 import CampaignNameInput from "./campaign-deployment/CampaignNameInput";
 import PropertyDetailsInput from "./campaign-deployment/PropertyDetailsInput";
 import { LeadStage } from '@/types/lead';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 
 interface CampaignDeploymentProps {
   selectedContacts: any[];
   selectedCampaignType: string;
   propertyDetails: string;
+  selectedPropertyId?: string;
   onPropertyDetailsChange: (value: string) => void;
 }
 
@@ -19,10 +22,11 @@ const CampaignDeployment = ({
   selectedContacts, 
   selectedCampaignType, 
   propertyDetails,
+  selectedPropertyId,
   onPropertyDetailsChange 
 }: CampaignDeploymentProps) => {
-  const { toast } = useToast();
   const [campaignName, setCampaignName] = useState("");
+  const { toast } = useToast();
 
   const storeClientData = async (contact: any, userId: string) => {
     try {
@@ -84,6 +88,7 @@ const CampaignDeployment = ({
         .insert({
           campaign_type: selectedCampaignType,
           property_details: propertyDetails,
+          property_id: selectedPropertyId,
           status: 'active',
           user_id: user.id,
           name: campaignName
@@ -184,7 +189,8 @@ const CampaignDeployment = ({
                     outcome: "Appointment scheduled",
                     status: "completed",
                     lead_stage: "Warm",
-                    email: contact.email
+                    email: contact.email,
+                    property_id: selectedPropertyId || null
                   })
                   .eq('bland_call_id', blandAIResponse.call_id);
                 
@@ -225,25 +231,37 @@ const CampaignDeployment = ({
   };
 
   return (
-    <div className="text-center p-12">
-      <h2 className="text-2xl font-bold mb-4">Review & Deploy Campaign</h2>
-      <p className="text-gray-600 mb-6">Ready to launch your campaign</p>
-      <div className="max-w-md mx-auto space-y-6">
-        <CampaignNameInput 
-          value={campaignName}
-          onChange={setCampaignName}
-        />
-        <PropertyDetailsInput
-          value={propertyDetails}
-          onChange={onPropertyDetailsChange}
-        />
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold">Review & Deploy Campaign</h2>
+        <p className="text-muted-foreground">Ready to launch your campaign</p>
       </div>
-      <Button 
-        onClick={handleDeployCampaign}
-        className="w-full max-w-md mt-6"
-      >
-        Deploy Campaign
-      </Button>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="campaignName">Campaign Name</Label>
+          <Input
+            id="campaignName"
+            value={campaignName}
+            onChange={(e) => setCampaignName(e.target.value)}
+            placeholder="Enter campaign name..."
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Property Details</Label>
+          <div className="p-3 rounded-md border bg-muted/50">
+            {propertyDetails || "No property selected"}
+          </div>
+        </div>
+
+        <Button 
+          className="w-full" 
+          onClick={handleDeployCampaign}
+        >
+          Deploy Campaign
+        </Button>
+      </div>
     </div>
   );
 };
