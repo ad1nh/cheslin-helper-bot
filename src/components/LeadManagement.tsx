@@ -18,6 +18,14 @@ interface Lead {
   email?: string;
   lastContact: string;
   propertyInterest: string;
+  campaigns?: {
+    id: string;
+    property_details: string;
+    property_id?: string;
+    properties?: {
+      address: string;
+    };
+  };
 }
 
 const transformCallToLead = (call: any): Lead => ({
@@ -29,7 +37,11 @@ const transformCallToLead = (call: any): Lead => ({
   phone: call.phone_number || '',
   email: call.email || '-',
   lastContact: format(new Date(call.created_at), 'yyyy-MM-dd, HH:mm'),
-  propertyInterest: call.campaigns?.property_details || 'Not specified'
+  propertyInterest: call.campaigns?.property_details || 'Not specified',
+  campaigns: {
+    id: call.campaign_id,
+    property_details: call.campaigns?.property_details
+  }
 });
 
 const LeadManagement = () => {
@@ -52,14 +64,20 @@ const LeadManagement = () => {
     return getLeadStageColor(status);
   };
 
-  const handleAddLead = async (newLeadData: Omit<Lead, "id" | "lastContact">) => {
+  const handleAddLead = async (contact: { 
+    name: string; 
+    phone: string; 
+    email: string; 
+    status: LeadStage; 
+    propertyInterest: string; 
+  }) => {
     try {
       const { data, error } = await supabase
         .from('campaign_calls')
         .insert([{
-          contact_name: newLeadData.name,
-          phone_number: newLeadData.phone,
-          lead_stage: newLeadData.status.toUpperCase(),
+          contact_name: contact.name,
+          phone_number: contact.phone,
+          lead_stage: contact.status.toUpperCase(),
           status: 'completed',
           created_at: new Date().toISOString()
         }])

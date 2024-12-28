@@ -30,6 +30,10 @@ interface LeadDetailsDialogProps {
     email?: string;
     lastContact: string;
     propertyInterest: string;
+    campaigns?: {
+      id: string;
+      property_details: string;
+    };
   };
 }
 
@@ -56,10 +60,39 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
     }
   });
 
-  const viewings = [
-    { id: 1, date: "2024-04-15", property: "123 Main St", status: "Scheduled" },
-    { id: 2, date: "2024-04-05", property: "456 Park Ave", status: "Completed" },
-  ];
+  const { data: viewings = [] } = useQuery({
+    queryKey: ["viewings", lead.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_calls')
+        .select(`
+          id,
+          appointment_date,
+          campaign_id,
+          campaigns (
+            id,
+            name,
+            property_details,
+            property_id,
+            properties:property_id (
+              address
+            )
+          )
+        `)
+        .eq('campaign_id', lead.campaigns?.id)
+        .not('appointment_date', 'is', null)
+        .order('appointment_date', { ascending: false });
+
+      if (error) throw error;
+      
+      return data.map((call: any) => ({
+        id: call.id,
+        date: format(new Date(call.appointment_date), 'yyyy-MM-dd'),
+        property: call.campaigns?.properties?.address || call.campaigns?.property_details || "Address not specified",
+        status: new Date(call.appointment_date) > new Date() ? "Scheduled" : "Completed"
+      }));
+    }
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -115,15 +148,21 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
           <Card className="p-4 col-span-2">
             <h3 className="font-semibold mb-2">Property Viewings</h3>
             <div className="space-y-2">
-              {viewings.map((viewing) => (
-                <div key={viewing.id} className="flex justify-between items-center border-b pb-2">
-                  <div>
-                    <p className="font-medium">{viewing.property}</p>
-                    <p className="text-sm text-muted-foreground">{viewing.date}</p>
+              {viewings.length > 0 ? (
+                viewings.map((viewing) => (
+                  <div key={viewing.id} className="flex justify-between items-center border-b pb-2">
+                    <div>
+                      <p className="font-medium">{viewing.property}</p>
+                      <p className="text-sm text-muted-foreground">{viewing.date}</p>
+                    </div>
+                    <Badge variant={viewing.status === "Scheduled" ? "default" : "secondary"}>
+                      {viewing.status}
+                    </Badge>
                   </div>
-                  <Badge>{viewing.status}</Badge>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No viewings scheduled</p>
+              )}
             </div>
           </Card>
         </div>

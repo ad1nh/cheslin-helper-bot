@@ -30,6 +30,7 @@ interface Lead {
   lastContact: string;
   propertyInterest: string;
   campaigns?: {
+    id: string;
     property_details: string;
   };
   created_at?: string;
@@ -54,6 +55,7 @@ interface CampaignCall {
   email: string | null;
   lead_stage: string | null;
   created_at: string;
+  campaign_id?: string;
   campaigns?: {
     property_details: string;
   };
@@ -62,6 +64,7 @@ interface CampaignCall {
 const ViewingSchedule = () => {
   const [selectedClient, setSelectedClient] = useState<Lead | null>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string>("");
 
   useEffect(() => {
     const checkInteractions = async () => {
@@ -83,8 +86,10 @@ const ViewingSchedule = () => {
         .select(`
           *,
           campaigns (
+            id,
+            name,
             property_details,
-            campaign_type
+            property_id
           )
         `)
         .not('appointment_date', 'is', null);
@@ -99,7 +104,7 @@ const ViewingSchedule = () => {
         date: new Date(call.appointment_date!).toLocaleDateString(),
         status: call.status === 'completed' ? 'confirmed' : 'pending',
         clientId: call.id,
-        propertyId: call.campaign_id || ''
+        propertyId: call.campaigns?.property_id || ''
       }));
     }
   });
@@ -175,6 +180,7 @@ const ViewingSchedule = () => {
         email,
         lead_stage,
         created_at,
+        campaign_id,
         campaigns (
           property_details
         )
@@ -197,7 +203,10 @@ const ViewingSchedule = () => {
       email: clientData.email || '-',
       lastContact: format(new Date(clientData.created_at), 'yyyy-MM-dd, HH:mm'),
       propertyInterest: clientData.campaigns?.property_details || 'Not specified',
-      campaigns: clientData.campaigns || undefined,
+      campaigns: {
+        id: clientData.campaign_id,
+        property_details: clientData.campaigns?.property_details
+      },
       created_at: clientData.created_at
     };
     
