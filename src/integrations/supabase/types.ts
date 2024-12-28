@@ -161,6 +161,38 @@ export type Database = {
         }
         Relationships: []
       }
+      interactions: {
+        Row: {
+          id: string
+          client_id: string
+          type: string
+          notes: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          type: string
+          notes: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          type?: string
+          notes?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_calls"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -57,7 +57,7 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
     }
 
     try {
-      const { data, error } = await supabase
+      const { data: client, error } = await supabase
         .from('clients')
         .insert({
           name,
@@ -65,12 +65,25 @@ const AddContactDialog = ({ onAddContact, type }: AddContactDialogProps) => {
           email,
           property_interest: propertyInterest,
           status,
-          last_contact: new Date().toISOString().split('T')[0]
+          last_contact: new Date().toISOString()
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      const { error: interactionError } = await supabase
+        .from('interactions')
+        .insert({
+          client_id: client.id,
+          type: 'Initial Contact',
+          notes: `Added as new ${type}. Property interest: ${propertyInterest || 'Not specified'}`,
+          created_at: new Date().toISOString()
+        });
+
+      if (interactionError) {
+        console.error('Error creating interaction:', interactionError);
+      }
 
       onAddContact({
         name,

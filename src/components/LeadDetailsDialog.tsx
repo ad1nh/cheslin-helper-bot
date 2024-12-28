@@ -8,6 +8,16 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Phone, Mail, Home } from "lucide-react";
 import { getLeadStageColor, LeadStage } from "@/types/lead";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { supabase } from "@/lib/supabase";
+
+interface Interaction {
+  id: string;
+  date: string;
+  type: string;
+  notes: string;
+}
 
 interface LeadDetailsDialogProps {
   open: boolean;
@@ -24,11 +34,27 @@ interface LeadDetailsDialogProps {
 }
 
 const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps) => {
-  // Mock data for demonstration
-  const interactions = [
-    { id: 1, date: "2024-04-10", type: "Phone Call", notes: "Discussed property requirements" },
-    { id: 2, date: "2024-04-08", type: "Email", notes: "Sent property listings" },
-  ];
+  const { data: interactions = [] } = useQuery({
+    queryKey: ["interactions", lead.id],
+    queryFn: async () => {
+      console.log("Fetching interactions for lead:", lead.id);
+      const { data, error } = await supabase
+        .from('interactions')
+        .select('*')
+        .eq('client_id', lead.id)
+        .order('created_at', { ascending: false });
+
+      console.log("Interactions query result:", { data, error });
+
+      if (error) throw error;
+      return data.map((interaction: any) => ({
+        id: interaction.id,
+        date: format(new Date(interaction.created_at), 'yyyy-MM-dd'),
+        type: interaction.type,
+        notes: interaction.notes
+      }));
+    }
+  });
 
   const viewings = [
     { id: 1, date: "2024-04-15", property: "123 Main St", status: "Scheduled" },
@@ -73,12 +99,16 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
               Recent Interactions
             </h3>
             <div className="space-y-2">
-              {interactions.map((interaction) => (
-                <div key={interaction.id} className="border-b pb-2">
-                  <p className="font-medium">{interaction.date} - {interaction.type}</p>
-                  <p className="text-sm text-muted-foreground">{interaction.notes}</p>
-                </div>
-              ))}
+              {interactions.length > 0 ? (
+                interactions.map((interaction) => (
+                  <div key={interaction.id} className="border-b pb-2">
+                    <p className="font-medium">{interaction.date} - {interaction.type}</p>
+                    <p className="text-sm text-muted-foreground">{interaction.notes}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No recent interactions</p>
+              )}
             </div>
           </Card>
 
