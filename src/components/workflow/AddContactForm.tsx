@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { ContactHistoryDialog } from "@/components/workflow/ContactHistoryDialog";
 
 interface Contact {
   id: number;
@@ -20,10 +22,24 @@ interface Contact {
   };
   preferredLocations: string[];
   notes: string;
+  campaignCount: number;
 }
 
 interface AddContactFormProps {
   onAddContacts: (contacts: Contact[]) => void;
+}
+
+interface CampaignCall {
+  id: string;
+  contact_name: string;
+  phone_number: string;
+  email: string | null;
+  lead_stage: string | null;
+  created_at: string;
+  campaigns?: {
+    name?: string;
+    property_details: string | null;
+  };
 }
 
 const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
@@ -40,6 +56,7 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
     propertyType: "",
     notes: "",
   });
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
 
   useEffect(() => {
     fetchClients();
@@ -47,36 +64,63 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
 
   const fetchClients = async () => {
     try {
-      const { data: clients, error } = await supabase
-        .from('clients')
-        .select('*')
+      const { data: calls, error } = await supabase
+        .from('campaign_calls')
+        .select(`
+          id,
+          contact_name,
+          phone_number,
+          email,
+          lead_stage,
+          created_at,
+          campaigns (
+            id,
+            name,
+            property_details,
+            created_at
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching clients:', error);
-        toast({
-          title: "Error",
-          description: "Failed to fetch existing contacts",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      const transformedClients: Contact[] = clients.map(client => ({
-        id: parseInt(client.id),
-        name: client.name,
-        email: client.email || '',
-        phone: client.phone || '',
-        propertyInterests: client.property_interest ? [client.property_interest] : [],
-        priceRange: { 
-          min: 0, 
-          max: 0 
-        },
-        preferredLocations: [],
-        notes: '',
-      }));
+      // Create a Map to store unique contacts using phone number as key
+      const uniqueContacts = new Map();
 
-      setAvailableContacts(transformedClients);
+      ((calls as unknown) as CampaignCall[])?.forEach(call => {
+        const key = call.phone_number;
+        
+        if (!uniqueContacts.has(key)) {
+          uniqueContacts.set(key, {
+            id: call.id,
+            name: call.contact_name,
+            email: call.email || '',
+            phone: call.phone_number,
+            propertyInterests: [call.campaigns?.property_details || ''],
+            leadStage: call.lead_stage || 'New',
+            lastContact: call.created_at,
+            campaignCount: 1,
+            campaigns: [{
+              name: call.campaigns?.name,
+              date: call.created_at,
+              property_details: call.campaigns?.property_details || ''
+            }]
+          });
+        } else {
+          const existing = uniqueContacts.get(key);
+          if (!existing.propertyInterests.includes(call.campaigns?.property_details)) {
+            existing.propertyInterests.push(call.campaigns?.property_details || '');
+          }
+          existing.campaignCount++;
+          existing.campaigns.push({
+            name: call.campaigns?.name,
+            date: call.created_at,
+            property_details: call.campaigns?.property_details || ''
+          });
+        }
+      });
+
+      setAvailableContacts(Array.from(uniqueContacts.values()));
     } catch (error) {
       console.error('Error in fetchClients:', error);
       toast({
@@ -101,6 +145,7 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
       },
       preferredLocations: [newContact.location],
       notes: newContact.notes,
+      campaignCount: 0,
     };
     setSelectedContacts([...selectedContacts, contact]);
     setNewContact({
@@ -138,16 +183,16 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
               <Card key={contact.id || `item-${index}`} className="p-4">
                 <div className="flex items-center space-x-4">
                   <Checkbox
-                    checked={selectedContacts.some(c => c.id === contact.id)}
+                    checked={selectedContacts.some(c => c.phone === contact.phone)}
                     onCheckedChange={(checked) => {
                       if (checked) {
                         setSelectedContacts([...selectedContacts, contact]);
                       } else {
-                        setSelectedContacts(selectedContacts.filter(c => c.id !== contact.id));
+                        setSelectedContacts(selectedContacts.filter(c => c.phone !== contact.phone));
                       }
                     }}
                   />
-                  <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div>
                       <Label>Name</Label>
                       <p className="text-sm">{contact.name}</p>
@@ -158,11 +203,29 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
                     </div>
                     <div>
                       <Label>Email</Label>
-                      <p className="text-sm">{contact.email}</p>
+                      <p className="text-sm">{contact.email || '-'}</p>
                     </div>
                     <div>
-                      <Label>Property Interest</Label>
-                      <p className="text-sm">{contact.propertyInterests.join(", ")}</p>
+                      <Label>Property Interests</Label>
+                      <Button 
+                        variant="ghost" 
+                        className="text-sm p-0 h-auto hover:bg-transparent"
+                        onClick={() => setSelectedContact(contact)}
+                      >
+                        {contact.propertyInterests.length > 1 
+                          ? `${contact.propertyInterests[0]} +${contact.propertyInterests.length - 1} more`
+                          : contact.propertyInterests[0] || '-'}
+                      </Button>
+                    </div>
+                    <div>
+                      <Label>Campaign History</Label>
+                      <Badge 
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => setSelectedContact(contact)}
+                      >
+                        {contact.campaignCount} campaign{contact.campaignCount !== 1 ? 's' : ''}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -261,6 +324,12 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
           Continue with {selectedContacts.length} contacts
         </Button>
       </div>
+
+      <ContactHistoryDialog 
+        open={!!selectedContact} 
+        onOpenChange={(open) => !open && setSelectedContact(null)}
+        contact={selectedContact!}
+      />
     </div>
   );
 };
