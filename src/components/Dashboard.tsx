@@ -11,27 +11,23 @@ import CalendarView from "./CalendarView";
 import ClientDatabase from "./ClientDatabase";
 import PropertyDatabase from "./PropertyDatabase";
 import CallTrackingTab from "./dashboard/CallTrackingTab";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Dashboard = () => {
   const { state } = useLocation();
   const [activeTab, setActiveTab] = useState(state?.defaultTab || 'Campaigns');
-  console.log("5. Dashboard rendered with state:", state);
-  console.log("6. defaultTab value:", state?.defaultTab);
-  
-  const defaultTab = state?.defaultTab || 'Campaigns';
-  console.log("7. Final defaultTab value:", defaultTab);
-
   const navigate = useNavigate();
+
+  // Update activeTab when state changes
+  useEffect(() => {
+    if (state?.defaultTab) {
+      setActiveTab(state.defaultTab);
+    }
+  }, [state]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/login");
-  };
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    console.log("Tab changed to:", value);
   };
 
   return (
@@ -48,7 +44,7 @@ const Dashboard = () => {
 
       <Tabs 
         value={activeTab}
-        onValueChange={handleTabChange}
+        onValueChange={setActiveTab}
         className="space-y-4"
       >
         <TabsList>
