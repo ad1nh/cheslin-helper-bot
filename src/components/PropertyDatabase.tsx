@@ -192,7 +192,7 @@ const PropertyDatabase = () => {
               <TableHead>Price</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Seller</TableHead>
-              <TableHead>Interested Buyers</TableHead>
+              <TableHead>Potential Buyers</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
