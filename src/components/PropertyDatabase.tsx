@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import SellerManagement from "./SellerManagement";
 
 interface Property {
   id: string;
@@ -55,13 +56,18 @@ const PropertyDatabase = () => {
     }
   });
 
-  const [sellers] = useState<Seller[]>([
-    {
-      id: "123e4567-e89b-12d3-a456-426614174000",
-      name: "John Doe",
-      phone: "+1 (555) 123-4567",
-    },
-  ]);
+  const { data: sellers = [] } = useQuery({
+    queryKey: ["sellers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('sellers')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    }
+  });
 
   const { data: propertyBuyers } = useQuery({
     queryKey: ["all-property-buyers"],
@@ -92,6 +98,38 @@ const PropertyDatabase = () => {
         });
         return acc;
       }, {});
+    }
+  });
+
+  const { data: propertyBuyerCounts = {} } = useQuery({
+    queryKey: ["property-buyers-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_calls')
+        .select(`
+          id,
+          contact_name,
+          lead_stage,
+          created_at,
+          campaigns!inner (
+            property_id
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      console.log('Raw campaign_calls data:', data);
+
+      if (error) throw error;
+
+      const counts = data.reduce((counts: { [key: string]: number }, call: any) => {
+        const propertyId = call.campaigns.property_id;
+        if (!propertyId) return counts;
+        counts[propertyId] = (counts[propertyId] || 0) + 1;
+        return counts;
+      }, {});
+
+      console.log('Processed counts:', counts);
+      return counts;
     }
   });
 
@@ -161,54 +199,57 @@ const PropertyDatabase = () => {
           <h2 className="text-2xl font-semibold">Property Database</h2>
           <p className="text-muted-foreground">Manage all properties and their relationships</p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button variant="outline">Add New Property</Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Property</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleAddProperty} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Input id="address" name="address" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
-                <Input id="price" name="price" type="number" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">Property Type</Label>
-                <Input id="type" name="type" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bedrooms">Bedrooms</Label>
-                <Input id="bedrooms" name="bedrooms" type="number" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="bathrooms">Bathrooms</Label>
-                <Input id="bathrooms" name="bathrooms" type="number" required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="seller">Seller</Label>
-                <Select name="seller" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select seller" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sellers.map((seller) => (
-                      <SelectItem key={seller.id} value={seller.id.toString()}>
-                        {seller.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" className="w-full">Add Property</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <div className="space-x-2">
+          <SellerManagement />
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Add New Property</Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Property</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleAddProperty} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input id="address" name="address" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Price</Label>
+                  <Input id="price" name="price" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="type">Property Type</Label>
+                  <Input id="type" name="type" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bedrooms">Bedrooms</Label>
+                  <Input id="bedrooms" name="bedrooms" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="bathrooms">Bathrooms</Label>
+                  <Input id="bathrooms" name="bathrooms" type="number" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="seller">Seller</Label>
+                  <Select name="seller" required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select seller" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sellers.map((seller) => (
+                        <SelectItem key={seller.id} value={seller.id.toString()}>
+                          {seller.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full">Add Property</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="mb-4">
@@ -250,9 +291,11 @@ const PropertyDatabase = () => {
                 </TableCell>
                 <TableCell>${property.price.toLocaleString()}</TableCell>
                 <TableCell>
-                  <Badge className={getStatusColor(property.status)}>
-                    {property.status.toUpperCase()}
-                  </Badge>
+                  <div className="inline-flex">
+                    <Badge className={getStatusColor(property.status)}>
+                      {property.status.toUpperCase()}
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell>
                   {sellers.find(s => s.id === property.seller_id)?.name}
@@ -264,7 +307,7 @@ const PropertyDatabase = () => {
                     className="font-medium hover:bg-muted/50 transition-colors duration-200 hover:scale-105"
                   >
                     <span className="text-muted-foreground hover:text-primary">
-                      {propertyBuyers?.[property.id]?.length || 0}
+                      {propertyBuyerCounts[property.id] || 0}
                     </span>
                   </Button>
                 </TableCell>
