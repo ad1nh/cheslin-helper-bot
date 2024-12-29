@@ -21,7 +21,12 @@ interface Property {
   bathrooms: number;
   status: "available" | "under-contract" | "sold";
   seller_id: string;
-  interested_buyers?: string[];
+  interested_buyers?: Array<{
+    id: string;
+    name: string;
+    status: string;
+    last_contact: string;
+  }>;
   created_at: string;
 }
 
@@ -57,6 +62,38 @@ const PropertyDatabase = () => {
       phone: "+1 (555) 123-4567",
     },
   ]);
+
+  const { data: propertyBuyers } = useQuery({
+    queryKey: ["all-property-buyers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_calls')
+        .select(`
+          id,
+          contact_name,
+          lead_stage,
+          created_at,
+          campaigns!inner (
+            property_id
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Group buyers by property_id
+      return (data || []).reduce((acc: { [key: string]: any[] }, buyer) => {
+        const propertyId = buyer.campaigns[0].property_id;
+        if (!acc[propertyId]) acc[propertyId] = [];
+        acc[propertyId].push({
+          id: buyer.id,
+          name: buyer.contact_name,
+          status: buyer.lead_stage || 'Considering'
+        });
+        return acc;
+      }, {});
+    }
+  });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -220,7 +257,17 @@ const PropertyDatabase = () => {
                 <TableCell>
                   {sellers.find(s => s.id === property.seller_id)?.name}
                 </TableCell>
-                <TableCell>{property.interested_buyers?.length} buyers</TableCell>
+                <TableCell>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="font-medium hover:bg-muted/50 transition-colors duration-200 hover:scale-105"
+                  >
+                    <span className="text-muted-foreground hover:text-primary">
+                      {propertyBuyers?.[property.id]?.length || 0}
+                    </span>
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

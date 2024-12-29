@@ -33,7 +33,8 @@ const PropertySelection = ({ onSelect, onNext }: PropertySelectionProps) => {
         bedrooms: parseInt(formData.bedrooms),
         bathrooms: parseInt(formData.bathrooms),
         status: formData.status || 'available',
-        seller_id: formData.sellerId
+        seller_id: formData.sellerId,
+        created_at: new Date().toISOString()
       })
       .select()
       .single();
