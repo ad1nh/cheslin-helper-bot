@@ -12,18 +12,18 @@ interface PropertyDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   property: {
-    id: number;
+    id: string;
     address: string;
     price: number;
     type: string;
     bedrooms: number;
     bathrooms: number;
     status: "available" | "under-contract" | "sold";
-    sellerId: number;
-    interestedBuyers: number[];
+    seller_id: string;
+    interested_buyers?: string[];
   };
   seller: {
-    id: number;  // Added this field
+    id: string;
     name: string;
     phone: string;
   };

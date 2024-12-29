@@ -228,16 +228,20 @@ const PropertyDatabase = () => {
       </div>
 
       {selectedProperty && (
-        <>
-          {console.log("Selected Property:", selectedProperty)}
-          {console.log("Selected Seller:", sellers.find(s => s.id === selectedProperty?.seller_id))}
-          <PropertyDetailsDialog
-            open={!!selectedProperty}
-            onOpenChange={(open) => !open && setSelectedProperty(null)}
-            property={selectedProperty}
-            seller={sellers.find(s => s.id === selectedProperty.seller_id) || sellers[0]}
-          />
-        </>
+        <PropertyDetailsDialog
+          open={!!selectedProperty}
+          onOpenChange={(open) => !open && setSelectedProperty(null)}
+          property={{
+            ...selectedProperty,
+            seller_id: selectedProperty.seller_id,
+            interested_buyers: selectedProperty.interested_buyers || []
+          }}
+          seller={sellers.find(s => s.id === selectedProperty.seller_id) || {
+            id: '',
+            name: 'Unknown',
+            phone: 'N/A'
+          }}
+        />
       )}
     </Card>
   );
