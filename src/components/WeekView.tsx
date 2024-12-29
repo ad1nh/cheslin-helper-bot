@@ -1,4 +1,4 @@
-import { format, startOfWeek, addDays, parseISO, isSameDay } from "date-fns";
+import { format, startOfWeek, addDays, parseISO, isSameDay, isToday } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +76,22 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
         <div className="grid grid-cols-8 gap-2 mb-2">
           <div className="w-20" />
           {weekDays.map((day, index) => (
-            <div key={`day-${format(day, 'yyyy-MM-dd')}`} className="text-center font-medium">
-              {format(day, 'EEE d')}
+            <div
+              key={day.toISOString()}
+              className={cn(
+                "flex-1 text-center p-2 border-r last:border-r-0",
+                isToday(day) && "bg-primary/10 rounded-t-md"
+              )}
+            >
+              <div className="font-medium">
+                {format(day, 'EEE')}
+              </div>
+              <div className={cn(
+                "text-sm",
+                isToday(day) && "text-primary font-medium"
+              )}>
+                {format(day, 'd')}
+              </div>
             </div>
           ))}
         </div>

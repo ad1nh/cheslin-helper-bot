@@ -3,12 +3,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/components/ui/use-toast";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import LeadDetailsDialog from "./LeadDetailsDialog";
 import PropertyDetailsDialog from "./PropertyDetailsDialog";
-import { format, parseISO, isSameDay } from "date-fns";
+import { format, parseISO, isSameDay, addWeeks, subWeeks } from "date-fns";
 import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
 import WeekView from "./WeekView";
 
@@ -155,6 +155,12 @@ const CalendarView = () => {
     setSelectedClient(transformedClient);
   };
 
+  const navigateWeek = (direction: 'forward' | 'backward') => {
+    setSelectedDate(current => 
+      direction === 'forward' ? addWeeks(current, 1) : subWeeks(current, 1)
+    );
+  };
+
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -162,7 +168,7 @@ const CalendarView = () => {
           <h2 className="text-2xl font-semibold tracking-tight">Calendar</h2>
           <p className="text-sm text-muted-foreground">Upcoming appointments and viewings</p>
         </div>
-        <div className="space-x-2">
+        <div className="space-x-2 flex items-center">
           <Button 
             variant={viewMode === 'day' ? 'default' : 'outline'}
             onClick={() => setViewMode('day')}
@@ -175,6 +181,24 @@ const CalendarView = () => {
           >
             Week
           </Button>
+          {viewMode === 'week' && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateWeek('backward')}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigateWeek('forward')}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -257,7 +281,7 @@ const CalendarView = () => {
           onOpenChange={(open) => !open && setSelectedProperty(null)}
           property={selectedProperty}
           seller={{
-            id: 1,
+            id: "1",
             name: "John Doe",
             phone: "+1 (555) 123-4567",
           }}
