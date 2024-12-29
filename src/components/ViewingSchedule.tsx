@@ -138,7 +138,7 @@ const ViewingSchedule = () => {
       .insert({
         client_id: call.id,
         type: 'Viewing Scheduled',
-        notes: `Method: Email - Viewing scheduled with ${contact.name}`,
+        notes: `Method: Email`,
         created_at: new Date().toISOString()
       });
   
@@ -148,7 +148,7 @@ const ViewingSchedule = () => {
       full_interaction: {
         client_id: call.id,
         type: 'Viewing Scheduled',
-        notes: `Method: Email - Viewing scheduled with ${contact.name}`,
+        notes: `Method: Email`,
         created_at: new Date().toISOString()
       }
     });

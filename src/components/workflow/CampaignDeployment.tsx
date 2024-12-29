@@ -138,7 +138,7 @@ const CampaignDeployment = ({
             .insert({
               client_id: callRecord.id,
               type: 'Appointment Scheduled',
-              notes: `Method: Phone Call - scheduled with ${contact.name}`,
+              notes: `Method: Phone Call`,
               created_at: new Date().toISOString()
             });
 
