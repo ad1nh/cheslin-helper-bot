@@ -23,6 +23,11 @@ interface Contact {
   preferredLocations: string[];
   notes: string;
   campaignCount: number;
+  campaigns?: Array<{
+    name?: string;
+    date: string;
+    property_details: string;
+  }>;
 }
 
 interface AddContactFormProps {
@@ -192,7 +197,7 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
                       }
                     }}
                   />
-                  <div className="flex-1 grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="flex-1 grid grid-cols-4 gap-4">
                     <div>
                       <Label>Name</Label>
                       <p className="text-sm">{contact.name}</p>
@@ -206,26 +211,16 @@ const AddContactForm = ({ onAddContacts }: AddContactFormProps) => {
                       <p className="text-sm">{contact.email || '-'}</p>
                     </div>
                     <div>
-                      <Label>Property Interests</Label>
-                      <Button 
-                        variant="ghost" 
-                        className="text-sm p-0 h-auto hover:bg-transparent"
-                        onClick={() => setSelectedContact(contact)}
-                      >
-                        {contact.propertyInterests.length > 1 
-                          ? `${contact.propertyInterests[0]} +${contact.propertyInterests.length - 1} more`
-                          : contact.propertyInterests[0] || '-'}
-                      </Button>
-                    </div>
-                    <div>
                       <Label>Campaign History</Label>
-                      <Badge 
-                        variant="secondary"
-                        className="cursor-pointer"
-                        onClick={() => setSelectedContact(contact)}
-                      >
-                        {contact.campaignCount} campaign{contact.campaignCount !== 1 ? 's' : ''}
-                      </Badge>
+                      <p className="text-sm">
+                        <Badge 
+                          variant="secondary"
+                          className="cursor-pointer mt-0.5"
+                          onClick={() => setSelectedContact(contact)}
+                        >
+                          {contact.campaignCount} campaign{contact.campaignCount !== 1 ? 's' : ''}
+                        </Badge>
+                      </p>
                     </div>
                   </div>
                 </div>

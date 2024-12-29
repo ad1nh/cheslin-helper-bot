@@ -9,7 +9,7 @@ import PropertySelection from "./workflow/PropertySelection";
 const steps = [
   "Launch Campaign Type",
   "Add Contacts",
-  "Review Contacts",
+  "Property Selection",
   "Review & Deploy Campaign"
 ];
 
