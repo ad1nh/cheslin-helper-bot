@@ -16,6 +16,7 @@ interface CampaignDeploymentProps {
   propertyDetails: string;
   selectedPropertyId?: string;
   onPropertyDetailsChange: (value: string) => void;
+  onDeploymentSuccess: (name: string) => void;
 }
 
 const CampaignDeployment = ({ 
@@ -23,9 +24,11 @@ const CampaignDeployment = ({
   selectedCampaignType, 
   propertyDetails,
   selectedPropertyId,
-  onPropertyDetailsChange 
+  onPropertyDetailsChange,
+  onDeploymentSuccess 
 }: CampaignDeploymentProps) => {
   const [campaignName, setCampaignName] = useState("");
+  const [isDeploying, setIsDeploying] = useState(false);
   const { toast } = useToast();
 
   const storeClientData = async (contact: any, userId: string) => {
@@ -62,6 +65,7 @@ const CampaignDeployment = ({
       return;
     }
 
+    setIsDeploying(true);
     try {
       // Log the start of deployment
       console.log("Starting campaign deployment:", {
@@ -220,6 +224,7 @@ const CampaignDeployment = ({
         title: "Success",
         description: "Campaign deployed successfully!",
       });
+      onDeploymentSuccess(campaignName);
     } catch (error) {
       console.error('Campaign deployment error:', error);
       toast({
@@ -227,6 +232,8 @@ const CampaignDeployment = ({
         description: `Failed to deploy campaign: ${error.message}`,
         variant: "destructive",
       });
+    } finally {
+      setIsDeploying(false);
     }
   };
 
@@ -258,8 +265,15 @@ const CampaignDeployment = ({
         <Button 
           className="w-full" 
           onClick={handleDeployCampaign}
+          disabled={isDeploying}
         >
-          Deploy Campaign
+          {isDeploying ? (
+            <>
+              <span className="animate-pulse">Deploying Campaign...</span>
+            </>
+          ) : (
+            "Deploy Campaign"
+          )}
         </Button>
       </div>
     </div>
