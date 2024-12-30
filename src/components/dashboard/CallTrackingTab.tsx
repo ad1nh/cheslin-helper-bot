@@ -40,9 +40,25 @@ const CallTrackingTab = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      console.log("Fetched calls:", data);
+      
+      console.log("\n=== DATABASE VERIFICATION ===");
+      // Log the first few appointments
+      data
+        .filter(call => call.appointment_date)
+        .slice(0, 3)
+        .forEach(call => {
+          console.log("Appointment from DB:", {
+            id: call.id,
+            rawDate: call.appointment_date,
+            parsedLocal: new Date(call.appointment_date).toLocaleString(),
+            parsedUTC: new Date(call.appointment_date).toUTCString()
+          });
+        });
+      console.log("============================\n");
+
       return data;
     },
+    refetchInterval: 5000
   });
 
   const getLeadStage = (call: any) => {
@@ -121,10 +137,22 @@ const CallTrackingTab = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {call.appointment_date ? 
-                      format(parseISO(call.appointment_date), 'PPp') : 
-                      '-'
-                    }
+                    {call.appointment_date ? (
+                      <div>
+                        {(() => {
+                          const date = parseISO(call.appointment_date);
+                          console.log("\n=== FRONTEND DISPLAY VERIFICATION ===");
+                          console.log("Rendering appointment:", {
+                            id: call.id,
+                            rawDate: call.appointment_date,
+                            parsedLocal: date.toLocaleString(),
+                            formattedDisplay: format(date, 'PPp')
+                          });
+                          console.log("===================================\n");
+                          return format(date, 'PPp');
+                        })()}
+                      </div>
+                    ) : '-'}
                   </TableCell>
                 </TableRow>
               ))}
