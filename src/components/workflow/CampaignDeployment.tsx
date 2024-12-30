@@ -153,7 +153,7 @@ const CampaignDeployment = ({
           setTimeout(async () => {
             try {
               const analysisResult = await analyzeBlandAICall(blandAIResponse.call_id);
-              console.log("Analysis result:", analysisResult);
+              console.log("Full analysis result:", JSON.stringify(analysisResult, null, 2));
               
               // Check if any user response indicates interest in booking
               const hasBookingInterest = analysisResult.transcripts
@@ -163,28 +163,72 @@ const CampaignDeployment = ({
                           t.text.toLowerCase().includes('book'));
 
               if (hasBookingInterest) {
-                // Look for appointment time in user responses
-                const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
+                // Update the regex to better handle times and dates
+                const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)/;
+                const dateRegex = /(?:January|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?/i;
+
                 let appointmentDate = null;
+
+                // Log all transcripts to see what we're working with
+                console.log("All transcripts:", analysisResult.transcripts);
 
                 for (const transcript of analysisResult.transcripts) {
                   if (transcript.user === 'user') {
-                    const match = transcript.text.match(appointmentTimeRegex);
-                    if (match) {
+                    console.log("Checking user transcript:", transcript.text);
+                    const timeMatch = transcript.text.match(appointmentTimeRegex);
+                    const dateMatch = transcript.text.match(dateRegex);
+                    
+                    if (timeMatch) {
+                      console.log("Time match found:", {
+                        fullMatch: timeMatch[0],
+                        hour: timeMatch[1],
+                        minutes: timeMatch[2],
+                        ampm: timeMatch[3],
+                        fullText: transcript.text
+                      });
+
+                      // Create date object for the specified date or default to tomorrow
                       const date = new Date();
-                      if (transcript.text.toLowerCase().includes('tomorrow')) {
+                      
+                      // Handle specific date if mentioned
+                      if (dateMatch) {
+                        const monthName = dateMatch[0].split(' ')[0];
+                        const day = parseInt(dateMatch[1]);
+                        date.setMonth(new Date(`${monthName} 1, 2024`).getMonth());
+                        date.setDate(day);
+                      } else if (transcript.text.toLowerCase().includes('tomorrow')) {
                         date.setDate(date.getDate() + 1);
                       }
-                      const hour = parseInt(match[1]);
-                      const isPM = transcript.text.toLowerCase().includes('pm');
-                      date.setHours(isPM ? hour + 12 : hour);
-                      date.setMinutes(0);
+                      
+                      let hour = parseInt(timeMatch[1]);
+                      const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                      const isPM = timeMatch[3].toLowerCase() === 'pm';
+                      
+                      // Adjust hour for PM times
+                      if (isPM && hour < 12) {
+                        hour += 12;
+                      }
+                      // Adjust for AM times
+                      if (!isPM && hour === 12) {
+                        hour = 0;
+                      }
+
+                      date.setHours(hour, minutes, 0, 0);
                       appointmentDate = date.toISOString();
-                      console.log("Found appointment date:", appointmentDate);
-                      break; // Exit loop once we find a date
+                      
+                      console.log("Final appointment date:", appointmentDate);
+                      break;
                     }
                   }
                 }
+
+                // Log the final data being sent to Supabase
+                console.log("Updating campaign call with:", {
+                  appointment_date: appointmentDate,
+                  outcome: "Appointment scheduled",
+                  status: "completed",
+                  lead_stage: "Warm"
+                });
 
                 await supabase
                   .from('campaign_calls')

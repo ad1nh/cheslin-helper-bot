@@ -8,13 +8,39 @@ interface CallAnalysisResponse {
   }>;
   summary: string;
   status: string;
+  appointmentDate?: string | null;
 }
 
 const BLAND_AI_API_KEY = 'org_9f11dcaa4abcdf524979dd18ffbd55d11c0267c7e9f8ac1850ac4fafa1abc0e9b53d967a2ecf9d8d884969';
 
+const createLocalISOString = (date: Date): string => {
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+  return localDate.toISOString();
+};
+
+const checkForAppointment = (response: string) => {
+  const isPositive = response.toLowerCase().includes('yes') || 
+                     response.toLowerCase().includes('sure') ||
+                     response.toLowerCase().includes('can i');
+  const mentionsAppointment = response.toLowerCase().includes('schedule') || 
+                             response.toLowerCase().includes('booking') ||
+                             response.toLowerCase().includes('appointment') ||
+                             response.toLowerCase().includes('viewing');
+  
+  return {
+    isPositive,
+    mentionsAppointment,
+    hasAppointment: isPositive && mentionsAppointment
+  };
+};
+
 export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisResponse> => {
   console.log("Starting analysis for call:", callId);
   
+  let appointmentDate: string | null = null;
+  let appointmentConfirmed = false;
+
   try {
     // First, let's check if we already have this call in our database
     const { data: existingCall } = await supabase
@@ -23,7 +49,9 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       .eq('bland_call_id', callId)
       .single();
 
-    console.log("Existing call data:", existingCall);
+    if (!existingCall) {
+      throw new Error('Call not found');
+    }
 
     const response = await fetch(`https://api.bland.ai/v1/calls/${callId}`, {
       headers: {
@@ -46,146 +74,79 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     console.log("All user responses:", userResponses);
 
     // Look for appointment time in user responses
-    const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h|pm|am|PM|AM)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)?/;
-    let appointmentDate = null;
-
-    // Get the date mentioned (23rd December)
-    const dateRegex = /(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(January|February|March|April|May|June|July|August|September|October|November|December)/i;
+    const appointmentTimeRegex = /(\d{1,2})(?:\s+)?(?:pm|am|PM|AM)/;
+    
+    // Update the date regex to better handle various date formats
+    const dateRegex = /(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|October|Oct|November|Nov|December|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?/i;
     
     // Also look for relative dates like "tomorrow"
     const tomorrowRegex = /tomorrow/i;
     
+    // Process each response
     for (const response of userResponses) {
       console.log("\nAnalyzing response:", response);
       
-      // Check for specific date mention
       const dateMatch = response.match(dateRegex);
       const timeMatch = response.match(appointmentTimeRegex);
-      const tomorrowMatch = response.match(tomorrowRegex);
-      
-      console.log("Regex matches:", {
-        dateMatch,
-        timeMatch,
-        tomorrowMatch
-      });
       
       if (dateMatch && timeMatch) {
-        console.log("Found specific date and time match");
-        const day = parseInt(dateMatch[1]);
-        const month = dateMatch[2];
-        const year = new Date().getFullYear();
-        
         // Create date object
-        const date = new Date(`${month} ${day}, ${year}`);
-        console.log("Created date object:", date);
+        const date = new Date();
+        const year = date.getFullYear();
+        const monthName = dateMatch[0].split(' ')[0];
+        const day = parseInt(dateMatch[1]);
         
-        // Extract time
+        // Parse time
         let hour = parseInt(timeMatch[1]);
-        const period = (timeMatch[3] || '').toLowerCase();
+        const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+        const isPM = response.toLowerCase().includes('pm');
         
-        // Convert to 24-hour format if needed
-        if (period === 'pm' && hour < 12) {
+        // Convert to 24-hour format
+        if (isPM && hour < 12) {
           hour += 12;
-        } else if (period === 'am' && hour === 12) {
-          hour = 0;
         }
         
-        console.log("Calculated hour:", hour);
+        // Set date components
+        date.setMonth(new Date(`${monthName} 1, ${year}`).getMonth());
+        date.setDate(day);
+        date.setHours(hour, minutes, 0, 0);
         
-        // Set the time
-        date.setHours(hour, 0, 0, 0);
         appointmentDate = date.toISOString();
-        console.log("Set final appointment date:", appointmentDate);
-      } else if (tomorrowMatch && timeMatch) {
-        console.log("Found tomorrow with time");
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        
-        let hour = parseInt(timeMatch[1]);
-        const period = (timeMatch[3] || '').toLowerCase();
-        
-        if (period === 'pm' && hour < 12) {
-          hour += 12;
-        } else if (period === 'am' && hour === 12) {
-          hour = 0;
-        }
-        
-        console.log("Calculated hour for tomorrow:", hour);
-        
-        tomorrow.setHours(hour, 0, 0, 0);
-        appointmentDate = tomorrow.toISOString();
-        console.log("Set final appointment date for tomorrow:", appointmentDate);
+        appointmentConfirmed = true;
+
+        console.log("Appointment details:", {
+          date: date.toLocaleString(),
+          isoString: appointmentDate,
+          confirmed: appointmentConfirmed
+        });
       }
     }
 
-    // Check if there's general interest in booking
-    const hasBookingInterest = userResponses.some(response => 
-      response.toLowerCase().includes('interested') || 
-      response.toLowerCase().includes('would like to') ||
-      response.toLowerCase().includes('want to see')
-    );
+    // Only attempt update if we have an appointment
+    if (appointmentConfirmed && appointmentDate) {
+      const { error: updateError } = await supabase
+        .from('campaign_calls')
+        .update({
+          appointment_date: appointmentDate,
+          outcome: "Appointment scheduled",
+          lead_stage: "Warm",
+          status: 'completed'
+        })
+        .eq('bland_call_id', callId);
 
-    // Check if we found an appointment in the conversation
-    const hasAppointment = userResponses.some(response => {
-      const isPositive = response.toLowerCase().includes('yes');
-      const mentionsAppointment = 
-        response.toLowerCase().includes('appointment') || 
-        response.toLowerCase().includes('viewing') ||
-        response.toLowerCase().includes('see the property');
-      
-      console.log("Checking response for appointment confirmation:", {
-        response,
-        isPositive,
-        mentionsAppointment
-      });
-      
-      return isPositive && mentionsAppointment;
-    });
-
-    console.log("Final analysis results:", {
-      hasAppointment,
-      appointmentDate,
-      callId
-    });
-
-    const determineLeadStage = (hasAppointment: boolean, hasInterest: boolean): LeadStage => {
-      if (hasAppointment) return 'Hot';
-      if (hasInterest) return 'Warm';
-      return 'Cold';
-    };
-
-    const leadStage = determineLeadStage(hasAppointment, hasBookingInterest);
-
-    // Update the campaign call with the analysis results
-    const { data: updatedCall, error: updateError } = await supabase
-      .from('campaign_calls')
-      .update({
-        outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-        lead_stage: hasAppointment ? "Warm" : leadStage,
-        appointment_date: appointmentDate ? new Date(appointmentDate).toISOString() : null,
-        status: 'completed'
-      })
-      .eq('bland_call_id', callId)
-      .select()
-      .maybeSingle();
-
-    if (updateError) {
-      console.error("Error updating campaign call:", updateError);
-      console.warn("Continuing despite update error");
+      if (updateError) {
+        console.error("Update error:", updateError);
+      }
     }
 
-    console.log("Successfully updated campaign call:", updatedCall);
-
-    console.log("Updating campaign call with:", {
-      outcome: hasAppointment ? "Appointment scheduled" : data.summary,
-      lead_stage: hasAppointment ? "Warm" : leadStage,
-      appointment_date: appointmentDate,
-      status: 'completed'
-    });
-
-    return data as CallAnalysisResponse;
+    return {
+      transcripts: data.transcripts,
+      summary: data.summary,
+      status: data.status,
+      appointmentDate
+    };
   } catch (error) {
-    console.error("Error analyzing call:", error);
+    console.error("Analysis error:", error);
     throw error;
   }
 };
