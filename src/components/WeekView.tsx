@@ -13,16 +13,17 @@ interface WeekViewProps {
   selectedDate: Date;
   onSelectClient: (client: any) => void;
   onSelectProperty: (property: any) => void;
+  onDateChange: (date: Date) => void;
 }
 
-const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty }: WeekViewProps) => {
+const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty, onDateChange }: WeekViewProps) => {
   // Get the week that contains the appointment date
   const appointmentDates = appointments.map(apt => apt.date);
   const latestAppointment = appointmentDates.length > 0 
     ? new Date(Math.max(...appointmentDates.map(d => d.getTime())))
     : selectedDate;
 
-  const weekStart = startOfWeek(latestAppointment, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
   console.log("Week range:", {
