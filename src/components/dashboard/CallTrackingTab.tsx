@@ -7,6 +7,7 @@ import { format, parseISO } from "date-fns";
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getLeadStageColor } from "@/types/lead";
+import { cn } from "@/lib/utils";
 
 interface CallDetails {
   id: string;
@@ -32,6 +33,7 @@ const CallTrackingTab = () => {
         .from("campaign_calls")
         .select(`
           *,
+          campaign_id,
           campaigns (
             campaign_type,
             property_details
@@ -84,6 +86,16 @@ const CallTrackingTab = () => {
     }
   };
 
+  const isRecentCampaignCall = (call: any) => {
+    if (!call.campaign_id || !call.created_at) return false;
+    
+    // Find the most recent campaign_id
+    const mostRecentCampaignId = calls
+      ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())?.[0]?.campaign_id;
+      
+    return call.campaign_id === mostRecentCampaignId;
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -113,7 +125,10 @@ const CallTrackingTab = () => {
               {calls?.map((call) => (
                 <TableRow 
                   key={call.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    isRecentCampaignCall(call) && "bg-blue-50 dark:bg-blue-950/20"
+                  )}
                   onClick={() => {
                     console.log("Selected call data:", call);
                     setSelectedCall(call);
