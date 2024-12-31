@@ -41,6 +41,14 @@ interface PropertyDetailsDialogProps {
   };
 }
 
+interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  clientName: string;
+  type: string;
+}
+
 const PropertyDetailsDialog = ({ open, onOpenChange, property, seller }: PropertyDetailsDialogProps) => {
   // Fetch potential buyers data
   const { data: potentialBuyers = [] } = useQuery({
@@ -95,11 +103,35 @@ const PropertyDetailsDialog = ({ open, onOpenChange, property, seller }: Propert
     }
   });
 
-  // Mock data for demonstration
-  const appointments = [
-    { id: 1, date: "2024-04-15", time: "14:00", clientName: "John Smith", type: "Viewing" },
-    { id: 2, date: "2024-04-20", time: "15:30", clientName: "Sarah Johnson", type: "Open House" },
-  ];
+  // Fetch appointments data
+  const { data: appointments = [] } = useQuery({
+    queryKey: ["property-appointments", property.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('campaign_calls')
+        .select(`
+          id,
+          contact_name,
+          appointment_date,
+          campaigns!inner (
+            property_id
+          )
+        `)
+        .eq('campaigns.property_id', property.id)
+        .not('appointment_date', 'is', null)
+        .order('appointment_date', { ascending: true });
+
+      if (error) throw error;
+
+      return data.map((call: any) => ({
+        id: call.id,
+        clientName: call.contact_name,
+        date: format(new Date(call.appointment_date), 'yyyy-MM-dd'),
+        time: format(new Date(call.appointment_date), 'HH:mm'),
+        type: 'Viewing'  // Default type for now
+      }));
+    }
+  });
 
   const listedDate = format(new Date(property.created_at), 'yyyy-MM-dd');
   const daysOnMarket = Math.floor((new Date().getTime() - new Date(listedDate).getTime()) / (1000 * 3600 * 24));
@@ -139,14 +171,18 @@ const PropertyDetailsDialog = ({ open, onOpenChange, property, seller }: Propert
               Appointments
             </h3>
             <div className="space-y-2">
-              {appointments.map((apt) => (
-                <div key={apt.id} className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>
-                    {apt.date} {apt.time} - {apt.clientName} ({apt.type})
-                  </span>
-                </div>
-              ))}
+              {appointments.length > 0 ? (
+                appointments.map((apt) => (
+                  <div key={apt.id} className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {apt.date} {apt.time} - {apt.clientName} ({apt.type})
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No appointments scheduled</p>
+              )}
             </div>
           </Card>
 
