@@ -90,12 +90,13 @@ const CampaignDeployment = ({
       const { data: campaign, error: campaignError } = await supabase
         .from('campaigns')
         .insert({
+          name: campaignName,
           campaign_type: selectedCampaignType,
           property_details: propertyDetails,
           property_id: selectedPropertyId,
           status: 'active',
           user_id: user.id,
-          name: campaignName
+          created_at: new Date().toISOString()
         })
         .select()
         .single();
