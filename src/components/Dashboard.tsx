@@ -14,20 +14,36 @@ import CallTrackingTab from "./dashboard/CallTrackingTab";
 import { useState, useEffect } from "react";
 
 const Dashboard = () => {
-  const { state } = useLocation();
-  const [activeTab, setActiveTab] = useState(state?.defaultTab || 'Campaigns');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState("Campaigns");
   const navigate = useNavigate();
 
-  // Update activeTab when state changes
   useEffect(() => {
-    if (state?.defaultTab) {
-      setActiveTab(state.defaultTab);
+    console.log("=== Tab Change Debug ===");
+    console.log("1. Dashboard mounted");
+    console.log("2. Location state:", location.state);
+    console.log("3. Current active tab:", activeTab);
+    
+    if (location.state?.defaultTab) {
+      console.log("4. Attempting to set tab to:", location.state.defaultTab);
+      setActiveTab(location.state.defaultTab);
+      console.log("5. Tab should now be:", location.state.defaultTab);
+      
+      // Clear the state after handling it
+      window.history.replaceState({}, document.title);
+      console.log("6. State cleared");
     }
-  }, [state]);
+  }, [location.state]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/login");
+  };
+
+  // Add logging to tab change handler
+  const handleTabChange = (value: string) => {
+    console.log("Tab manually changed to:", value);
+    setActiveTab(value);
   };
 
   return (
@@ -44,7 +60,7 @@ const Dashboard = () => {
 
       <Tabs 
         value={activeTab}
-        onValueChange={setActiveTab}
+        onValueChange={handleTabChange}
         className="space-y-4"
       >
         <TabsList>
