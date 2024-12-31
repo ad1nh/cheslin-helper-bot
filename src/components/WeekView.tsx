@@ -36,33 +36,36 @@ const WeekView = ({ appointments, selectedDate, onSelectClient, onSelectProperty
   const getAppointmentsForTimeSlot = (day: Date, hour: number) => {
     const timeSlotAppointments = appointments.filter((apt) => {
       const aptDate = apt.date instanceof Date ? apt.date : new Date(apt.date);
-      const aptDay = new Date(format(aptDate, 'yyyy-MM-dd'));
-      const checkingDay = new Date(format(day, 'yyyy-MM-dd'));
       
-      const aptHour = aptDate.getHours();
-      const isSameTimeSlot = aptHour === hour;
-      const isSameDayResult = aptDay.getTime() === checkingDay.getTime();
+      console.log("Checking appointment:", {
+        id: apt.id,
+        appointmentDate: aptDate,
+        checkingDay: day,
+        appointmentHour: aptDate.getHours(),
+        slotHour: hour,
+        isSameDay: isSameDay(aptDate, day),
+        isSameHour: aptDate.getHours() === hour
+      });
 
-      return isSameTimeSlot && isSameDayResult;
+      return isSameDay(aptDate, day) && aptDate.getHours() === hour;
     });
 
+    console.log(`Found ${timeSlotAppointments.length} appointments for ${format(day, 'yyyy-MM-dd')} at ${hour}:00`);
+    
     // Group overlapping appointments into columns
     const columns: typeof timeSlotAppointments[] = [];
     timeSlotAppointments.forEach(apt => {
-      // Find first column where this appointment can fit
       const columnIndex = columns.findIndex(column => {
         return !column.some(existingApt => {
           const existingTime = new Date(existingApt.date).getTime();
           const newTime = new Date(apt.date).getTime();
-          return Math.abs(existingTime - newTime) < 3600000; // 1 hour in milliseconds
+          return Math.abs(existingTime - newTime) < 3600000;
         });
       });
 
       if (columnIndex === -1) {
-        // Create new column
         columns.push([apt]);
       } else {
-        // Add to existing column
         columns[columnIndex].push(apt);
       }
     });
