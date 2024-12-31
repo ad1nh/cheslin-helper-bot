@@ -9,6 +9,7 @@ import PropertyDetailsInput from "./campaign-deployment/PropertyDetailsInput";
 import { LeadStage } from '@/types/lead';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 interface CampaignDeploymentProps {
   selectedContacts: any[];
@@ -29,7 +30,9 @@ const CampaignDeployment = ({
 }: CampaignDeploymentProps) => {
   const [campaignName, setCampaignName] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
+  const [successfulAppointments, setSuccessfulAppointments] = useState(0);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const storeClientData = async (contact: any, userId: string) => {
     try {
@@ -104,6 +107,9 @@ const CampaignDeployment = ({
       if (campaignError) throw campaignError;
       console.log("Campaign created:", campaign);
 
+      let completedCalls = 0;
+      const totalCalls = selectedContacts.length;
+
       for (const contact of selectedContacts) {
         try {
           console.log("Initiating call for contact:", contact);
@@ -164,9 +170,9 @@ const CampaignDeployment = ({
                           t.text.toLowerCase().includes('book'));
 
               if (hasBookingInterest) {
-                // Update the regex to better handle times and dates
+                // Update the regex to handle years
                 const appointmentTimeRegex = /(\d{1,2})(?:\s*)?(?::|h)?(?:\s*)?([0-9]{2})?(?:\s*)?(pm|am|PM|AM)/;
-                const dateRegex = /(?:January|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?/i;
+                const dateRegex = /(?:January|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?(?:\s+)?(?:,?\s*)?(\d{4})?/i;
 
                 let appointmentDate = null;
 
@@ -187,16 +193,22 @@ const CampaignDeployment = ({
                         ampm: timeMatch[3],
                         fullText: transcript.text
                       });
-
+                      
                       // Create date object for the specified date or default to tomorrow
                       const date = new Date();
                       
                       // Handle specific date if mentioned
                       if (dateMatch) {
+                        console.log("Date match found:", dateMatch);
                         const monthName = dateMatch[0].split(' ')[0];
                         const day = parseInt(dateMatch[1]);
-                        date.setMonth(new Date(`${monthName} 1, 2024`).getMonth());
+                        const year = dateMatch[2] ? parseInt(dateMatch[2]) : new Date().getFullYear();
+                        
+                        date.setFullYear(year);
+                        date.setMonth(new Date(`${monthName} 1, ${year}`).getMonth());
                         date.setDate(day);
+                        
+                        console.log("Parsed date components:", { monthName, day, year });
                       } else if (transcript.text.toLowerCase().includes('tomorrow')) {
                         date.setDate(date.getDate() + 1);
                       }
@@ -244,6 +256,10 @@ const CampaignDeployment = ({
                   .eq('bland_call_id', blandAIResponse.call_id);
                 
                 console.log("Campaign call updated with appointment details");
+
+                if (appointmentDate) {
+                  setSuccessfulAppointments(prev => prev + 1);
+                }
               }
             } catch (error) {
               console.error("Error analyzing call:", error);
@@ -255,6 +271,37 @@ const CampaignDeployment = ({
             }
           }, 120000);
 
+          completedCalls++;
+          
+          // Check if this was the last call
+          if (completedCalls === totalCalls && successfulAppointments > 0) {
+            toast({
+              title: "Appointments Scheduled!",
+              description: (
+                <div className="space-y-2">
+                  <p>{successfulAppointments} appointment(s) have been scheduled.</p>
+                  <div className="flex gap-2 mt-2">
+                    <Button 
+                      variant="default"
+                      size="sm"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      View Dashboard
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/calendar')}
+                    >
+                      View Calendar
+                    </Button>
+                  </div>
+                </div>
+              ),
+              duration: 15000, // 15 seconds
+            });
+          }
+
         } catch (error) {
           console.error('Detailed error for contact:', contact.name, error);
           toast({
@@ -265,10 +312,12 @@ const CampaignDeployment = ({
         }
       }
 
+      // General success toast for campaign completion
       toast({
         title: "Success",
         description: "Campaign deployed successfully!",
       });
+      
       onDeploymentSuccess(campaignName);
     } catch (error) {
       console.error('Campaign deployment error:', error);

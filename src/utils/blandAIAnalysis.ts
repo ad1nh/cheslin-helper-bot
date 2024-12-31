@@ -76,8 +76,8 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
     // Look for appointment time in user responses
     const appointmentTimeRegex = /(\d{1,2})(?:\s+)?(?:pm|am|PM|AM)/;
     
-    // Update the date regex to better handle various date formats
-    const dateRegex = /(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|October|Oct|November|Nov|December|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?/i;
+    // Update the date regex to capture the year
+    const dateRegex = /(?:January|Jan|February|Feb|March|Mar|April|Apr|May|June|Jun|July|Jul|August|Aug|September|Sept|October|Oct|November|Nov|December|Dec)(?:\s+)(\d{1,2})(?:st|nd|rd|th)?(?:,?\s*)?(?:,?\s*(\d{4}))?/i;
     
     // Also look for relative dates like "tomorrow"
     const tomorrowRegex = /tomorrow/i;
@@ -92,9 +92,9 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
       if (dateMatch && timeMatch) {
         // Create date object
         const date = new Date();
-        const year = date.getFullYear();
         const monthName = dateMatch[0].split(' ')[0];
         const day = parseInt(dateMatch[1]);
+        const year = dateMatch[2] ? parseInt(dateMatch[2]) : new Date().getFullYear();
         
         // Parse time
         let hour = parseInt(timeMatch[1]);
@@ -107,6 +107,7 @@ export const analyzeBlandAICall = async (callId: string): Promise<CallAnalysisRe
         }
         
         // Set date components
+        date.setFullYear(year);  // Set year first
         date.setMonth(new Date(`${monthName} 1, ${year}`).getMonth());
         date.setDate(day);
         date.setHours(hour, minutes, 0, 0);
