@@ -71,10 +71,19 @@ const CalendarView = () => {
         throw error;
       }
 
+      console.log("Raw calls from DB:", calls);
+
       return calls
         .filter(call => call.appointment_date)
         .map((call) => {
           try {
+            console.log("Processing appointment:", {
+              id: call.id,
+              rawDate: call.appointment_date,
+              parsedDate: new Date(call.appointment_date),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            });
+            
             const date = new Date(call.appointment_date);
             
             if (isNaN(date.getTime())) {
@@ -82,7 +91,7 @@ const CalendarView = () => {
               return null;
             }
 
-            return {
+            const appointment = {
               id: call.id,
               title: "Property Viewing",
               date: date,
@@ -91,6 +100,9 @@ const CalendarView = () => {
               time: format(date, 'h:mm a'),
               leadStatus: call.lead_stage || "Cold"
             };
+
+            console.log("Processed appointment:", appointment);
+            return appointment;
           } catch (error) {
             console.error("Error processing appointment:", error);
             return null;
