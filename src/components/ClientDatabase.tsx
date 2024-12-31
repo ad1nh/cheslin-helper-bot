@@ -1,30 +1,17 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { useState, useEffect } from "react";
-import AddContactDialog from "./AddContactDialog";
-import LeadDetailsDialog from "./LeadDetailsDialog";
-import { LeadStage, getLeadStageColor, LEAD_STAGE_COLORS } from '@/types/lead';
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { format } from "date-fns";
+import AddContactDialog from "./AddContactDialog";
+import { Client, transformToClient } from "@/types/client";
+import { ExpandableClientCard } from "./ExpandableClientCard";
 
-interface Client {
-  id: number;
-  name: string;
-  phone: string;
-  email: string;
-  status: LeadStage;
-  propertyInterest: string;
-  lastContact: string;
-}
-
-const ClientDatabase = () => {
+export function ClientDatabase() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
 
-  const { data: clientsData = [] } = useQuery({
+  const { data: clientsData = [], isLoading } = useQuery({
     queryKey: ["clients"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -32,48 +19,57 @@ const ClientDatabase = () => {
         .select(`
           *,
           campaigns (
-            property_details
+            id,
+            name,
+            property_details,
+            created_at
+          ),
+          interactions (
+            id,
+            type,
+            notes,
+            created_at
           )
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      return data.map((client: any) => ({
-        id: client.id,
-        name: client.contact_name,
-        phone: client.phone_number,
-        email: client.email || "-",
-        status: client.appointment_date ? "Warm" : (client.lead_stage || "New"),
-        propertyInterest: client.campaigns?.property_details || "Not specified",
-        lastContact: format(new Date(client.created_at), 'yyyy-MM-dd, HH:mm')
-      }));
+      // Create a Map to store unique clients using phone number as key
+      const uniqueClients = new Map<string, Client>();
+
+      data?.forEach(rawClient => {
+        const client = transformToClient(rawClient);
+        const key = client.phone;
+        
+        if (!uniqueClients.has(key)) {
+          uniqueClients.set(key, client);
+        } else {
+          const existing = uniqueClients.get(key)!;
+          existing.campaignCount++;
+          if (client.campaigns.length > 0) {
+            existing.campaigns = [...existing.campaigns, ...client.campaigns];
+          }
+          if (client.interactions.length > 0) {
+            existing.interactions = [...existing.interactions, ...client.interactions];
+          }
+          // Update lastContact if this entry is more recent
+          if (new Date(client.lastContact) > new Date(existing.lastContact)) {
+            existing.lastContact = client.lastContact;
+          }
+        }
+      });
+
+      return Array.from(uniqueClients.values());
     }
   });
 
-  const getStatusColor = (status: string) => {
-    return getLeadStageColor(status);
-  };
-
+  // Basic search functionality
   const filteredClients = clientsData.filter((client) =>
     Object.values(client).some((value) =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
-
-  const handleAddClient = (newClient: any) => {
-    // Instead of:
-    // const client: Client = {
-    //   ...newClient,
-    //   id: clients.length + 1,
-    //   email: newClient.email || "",
-    //   lastContact: new Date().toISOString().split("T")[0],
-    // };
-    // setClients([...clients, client]);
-
-    // You should use a mutation to add the client to the database
-    // The useQuery will automatically refresh the data
-  };
 
   return (
     <Card className="p-6">
@@ -82,7 +78,7 @@ const ClientDatabase = () => {
           <h2 className="text-2xl font-semibold">Client Database</h2>
           <p className="text-muted-foreground">Manage and track all your clients</p>
         </div>
-        <AddContactDialog onAddContact={handleAddClient} type="client" />
+        <AddContactDialog type="client" onAddContact={() => {}} />
       </div>
 
       <div className="mb-4">
@@ -94,62 +90,23 @@ const ClientDatabase = () => {
         />
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Property Interest</TableHead>
-              <TableHead>Last Contact</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredClients.map((client) => (
-              <TableRow 
-                key={client.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => setSelectedClient(client)}
-              >
-                <TableCell className="font-medium">{client.name}</TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    <div>{client.phone}</div>
-                    <div className="text-sm text-muted-foreground">{client.email}</div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(client.status)}>
-                    {client.status.toUpperCase()}
-                  </Badge>
-                </TableCell>
-                <TableCell>{client.propertyInterest}</TableCell>
-                <TableCell>{client.lastContact}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      {/* We'll add the client cards here in the next step */}
+      <div className="space-y-4">
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : (
+          filteredClients.map((client) => (
+            <ExpandableClientCard
+              key={client.id}
+              client={client}
+              onOpenChange={(open) => setExpandedClientId(open ? client.id : null)}
+            />
+          ))
+        )}
       </div>
-
-      {selectedClient && (
-        <LeadDetailsDialog
-          open={!!selectedClient}
-          onOpenChange={(open) => !open && setSelectedClient(null)}
-          lead={{
-            id: selectedClient.id.toString(),
-            name: selectedClient.name,
-            status: selectedClient.status,
-            phone: selectedClient.phone,
-            email: selectedClient.email,
-            lastContact: selectedClient.lastContact,
-            propertyInterest: selectedClient.propertyInterest,
-          }}
-        />
-      )}
     </Card>
   );
-};
+}
 
 export default ClientDatabase;
 
