@@ -63,20 +63,14 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
   const { data: viewings = [] } = useQuery({
     queryKey: ["viewings", lead.id],
     queryFn: async () => {
-      if (!lead.campaigns?.id) {
-        console.log("No campaign ID available for lead:", lead.id);
-        return [];
-      }
-
+      console.log("Fetching viewings for lead:", lead.id);
+      
       const { data, error } = await supabase
         .from('campaign_calls')
         .select(`
           id,
           appointment_date,
-          campaign_id,
           campaigns (
-            id,
-            name,
             property_details,
             property_id,
             properties:property_id (
@@ -84,7 +78,7 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
             )
           )
         `)
-        .eq('campaign_id', lead.campaigns.id)
+        .eq('id', lead.id)
         .not('appointment_date', 'is', null)
         .order('appointment_date', { ascending: false });
 
@@ -93,14 +87,15 @@ const LeadDetailsDialog = ({ open, onOpenChange, lead }: LeadDetailsDialogProps)
         return [];
       }
       
+      console.log("Raw viewings data:", data);
+      
       return (data || []).map((call: any) => ({
         id: call.id,
         date: format(new Date(call.appointment_date), 'yyyy-MM-dd'),
-        property: call.campaigns?.properties?.address || call.campaigns?.property_details || "Address not specified",
+        property: call.campaigns?.property_details || "Address not specified",
         status: new Date(call.appointment_date) > new Date() ? "Scheduled" : "Completed"
       }));
-    },
-    enabled: !!lead.campaigns?.id
+    }
   });
 
   return (

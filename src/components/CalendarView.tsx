@@ -50,6 +50,11 @@ const CalendarView = () => {
   const [selectedProperty, setSelectedProperty] = useState<any>(null);
   const { toast } = useToast();
 
+  // Add date validation helper
+  const isValidDate = (date: any): date is Date => {
+    return date instanceof Date && !isNaN(date.getTime());
+  };
+
   // Fetch appointments from campaign_calls
   const { data: appointments = [] } = useQuery({
     queryKey: ["appointments"],
@@ -168,9 +173,30 @@ const CalendarView = () => {
   };
 
   const navigateWeek = (direction: 'forward' | 'backward') => {
-    setSelectedDate(current => 
-      direction === 'forward' ? addWeeks(current, 1) : subWeeks(current, 1)
-    );
+    setSelectedDate(current => {
+      if (!isValidDate(current)) {
+        return new Date(); // Fallback to current date if invalid
+      }
+      return direction === 'forward' ? addWeeks(current, 1) : subWeeks(current, 1);
+    });
+  };
+
+  const handleCalendarSelect = (date: Date | undefined) => {
+    // If the same date is selected again, do nothing
+    if (date && selectedDate && isSameDay(date, selectedDate)) {
+      return;
+    }
+    
+    // Otherwise update the date if valid
+    if (date && isValidDate(date)) {
+      setSelectedDate(date);
+    }
+  };
+
+  const handleDateSelect = (date: Date) => {
+    if (date && isValidDate(date)) {
+      setSelectedDate(date);
+    }
   };
 
   return (
@@ -217,10 +243,10 @@ const CalendarView = () => {
       {viewMode === 'week' ? (
         <WeekView 
           appointments={appointments} 
-          selectedDate={selectedDate}
+          selectedDate={isValidDate(selectedDate) ? selectedDate : new Date()}
           onSelectClient={handleClientClick}
           onSelectProperty={setSelectedProperty}
-          onDateChange={setSelectedDate}
+          onDateChange={handleDateSelect}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -228,7 +254,7 @@ const CalendarView = () => {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={setSelectedDate}
+              onSelect={handleCalendarSelect}
               className="rounded-md border"
             />
           </div>
