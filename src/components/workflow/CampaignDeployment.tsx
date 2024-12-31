@@ -20,43 +20,6 @@ interface CampaignDeploymentProps {
   onDeploymentSuccess: (name: string) => void;
 }
 
-const checkAppointments = async (campaignId: string, toast: any, navigate: any) => {
-  // Wait for BlandAI processing (2 minutes) plus a small buffer
-  await new Promise(resolve => setTimeout(resolve, 125000));
-
-  try {
-    const { data: appointments, error } = await supabase
-      .from('campaign_calls')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .eq('outcome', 'Appointment scheduled');
-
-    if (!error && appointments && appointments.length > 0) {
-      toast({
-        title: "Campaign Results Ready",
-        description: (
-          <div className="space-y-2">
-            <p>{appointments.length} new appointment{appointments.length > 1 ? 's' : ''} scheduled!</p>
-            <div className="flex gap-2 mt-2">
-              <Button 
-                variant="default"
-                size="sm"
-                className="bg-primary text-white hover:bg-primary/90"
-                onClick={() => navigate('/dashboard')}
-              >
-                View Results
-              </Button>
-            </div>
-          </div>
-        ),
-        duration: 20000,
-      });
-    }
-  } catch (error) {
-    console.error("Error checking appointments:", error);
-  }
-};
-
 const CampaignDeployment = ({ 
   selectedContacts, 
   selectedCampaignType, 
@@ -146,10 +109,7 @@ const CampaignDeployment = ({
       if (campaignError) throw campaignError;
       console.log("Campaign created:", campaign);
 
-      if (campaign?.id) {
-        checkAppointments(campaign.id, toast, navigate);
-      }
-
+  
       for (const contact of selectedContacts) {
         try {
           console.log("Processing contact:", contact.name);
@@ -317,67 +277,6 @@ const CampaignDeployment = ({
           console.error('Error processing contact:', contact.name, error);
         }
       }
-
-      // After all contacts are processed
-      console.log("Campaign deployment completed. Successful appointments:", completedAppointments);
-      
-      if (completedAppointments > 0) {
-        console.log("Showing appointment success notification");
-        toast({
-          title: "New Appointments Scheduled!",
-          description: (
-            <div className="space-y-2">
-              <p>{completedAppointments} new appointment(s) have been scheduled.</p>
-              <div className="flex gap-2 mt-2">
-                <Button 
-                  variant="default"
-                  size="sm"
-                  className="bg-primary text-white hover:bg-primary/90"
-                  onClick={() => {
-                    console.log("Navigating to dashboard");
-                    navigate('/dashboard');
-                  }}
-                >
-                  View Appointments
-                </Button>
-              </div>
-            </div>
-          ),
-          duration: 20000, // 20 seconds
-        });
-      }
-
-      // Add this new block after the contact processing loop
-      setTimeout(() => {
-        // Check final results after all calls have been analyzed
-        const checkResults = async () => {
-          const { data: appointments } = await supabase
-            .from('campaign_calls')
-            .select('*')
-            .eq('campaign_id', campaign.id)
-            .eq('outcome', 'Appointment scheduled');
-
-          if (appointments && appointments.length > 0) {
-            toast({
-              title: "Appointments Scheduled!",
-              description: (
-                <div className="space-y-2">
-                  <p>{appointments.length} new appointments have been scheduled.</p>
-                  <Button 
-                    variant="default"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    View in Dashboard
-                  </Button>
-                </div>
-              ),
-              duration: 20000,
-            });
-          }
-        };
-
-        checkResults();
-      }, 125000); // Wait slightly longer than the BlandAI analysis
 
       toast({
         title: "Success",

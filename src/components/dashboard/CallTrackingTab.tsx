@@ -126,12 +126,20 @@ const CallTrackingTab = () => {
               </div>
               <Button
                 variant="outline"
-                className="border-green-200 text-green-700 hover:bg-green-100"
+                className="border-green-200 text-green-700 hover:bg-green-600 hover:text-white transition-colors duration-200"
                 onClick={() => {
-                  navigate('/dashboard', { state: { defaultTab: 'Call Tracking' }});
+                  console.log("1. Button clicked");
+                  console.log("2. Current location:", window.location.pathname);
+                  console.log("3. Attempting navigation with state:", { defaultTab: 'dashboard' });
+                  
+                  navigate('/', { 
+                    state: { defaultTab: 'dashboard' }
+                  });
+                  
+                  console.log("4. Navigation executed");
                 }}
               >
-                View Details
+                View in Dashboard
               </Button>
             </div>
           </div>
