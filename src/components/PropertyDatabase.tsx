@@ -109,6 +109,7 @@ const PropertyDatabase = () => {
         .select(`
           id,
           contact_name,
+          phone_number,
           lead_stage,
           created_at,
           campaigns!inner (
@@ -117,19 +118,25 @@ const PropertyDatabase = () => {
         `)
         .order('created_at', { ascending: false });
 
-      console.log('Raw campaign_calls data:', data);
-
       if (error) throw error;
 
-      const counts = data.reduce((counts: { [key: string]: number }, call: any) => {
+      // Count unique buyers by phone number per property
+      const counts = data.reduce((counts: { [key: string]: Set<string> }, call: any) => {
         const propertyId = call.campaigns.property_id;
         if (!propertyId) return counts;
-        counts[propertyId] = (counts[propertyId] || 0) + 1;
+        
+        if (!counts[propertyId]) {
+          counts[propertyId] = new Set();
+        }
+        counts[propertyId].add(call.phone_number);
         return counts;
       }, {});
 
-      console.log('Processed counts:', counts);
-      return counts;
+      // Convert Sets to counts
+      return Object.entries(counts).reduce((acc: { [key: string]: number }, [propertyId, phoneSet]) => {
+        acc[propertyId] = phoneSet.size;
+        return acc;
+      }, {});
     }
   });
 
@@ -322,9 +329,15 @@ const PropertyDatabase = () => {
           open={!!selectedProperty}
           onOpenChange={(open) => !open && setSelectedProperty(null)}
           property={{
-            ...selectedProperty,
+            id: selectedProperty.id,
+            address: selectedProperty.address,
+            price: selectedProperty.price,
+            type: selectedProperty.type,
+            bedrooms: selectedProperty.bedrooms,
+            bathrooms: selectedProperty.bathrooms,
+            status: selectedProperty.status,
             seller_id: selectedProperty.seller_id,
-            interested_buyers: selectedProperty.interested_buyers || []
+            created_at: selectedProperty.created_at
           }}
           seller={sellers.find(s => s.id === selectedProperty.seller_id) || {
             id: '',
