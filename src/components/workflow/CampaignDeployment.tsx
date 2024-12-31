@@ -20,6 +20,43 @@ interface CampaignDeploymentProps {
   onDeploymentSuccess: (name: string) => void;
 }
 
+const checkAppointments = async (campaignId: string, toast: any, navigate: any) => {
+  // Wait for BlandAI processing (2 minutes) plus a small buffer
+  await new Promise(resolve => setTimeout(resolve, 125000));
+
+  try {
+    const { data: appointments, error } = await supabase
+      .from('campaign_calls')
+      .select('*')
+      .eq('campaign_id', campaignId)
+      .eq('outcome', 'Appointment scheduled');
+
+    if (!error && appointments && appointments.length > 0) {
+      toast({
+        title: "Campaign Results Ready",
+        description: (
+          <div className="space-y-2">
+            <p>{appointments.length} new appointment{appointments.length > 1 ? 's' : ''} scheduled!</p>
+            <div className="flex gap-2 mt-2">
+              <Button 
+                variant="default"
+                size="sm"
+                className="bg-primary text-white hover:bg-primary/90"
+                onClick={() => navigate('/dashboard')}
+              >
+                View Results
+              </Button>
+            </div>
+          </div>
+        ),
+        duration: 20000,
+      });
+    }
+  } catch (error) {
+    console.error("Error checking appointments:", error);
+  }
+};
+
 const CampaignDeployment = ({ 
   selectedContacts, 
   selectedCampaignType, 
@@ -69,6 +106,8 @@ const CampaignDeployment = ({
     }
 
     setIsDeploying(true);
+    let completedAppointments = 0;
+
     try {
       // Log the start of deployment
       console.log("Starting campaign deployment:", {
@@ -107,12 +146,13 @@ const CampaignDeployment = ({
       if (campaignError) throw campaignError;
       console.log("Campaign created:", campaign);
 
-      let completedCalls = 0;
-      const totalCalls = selectedContacts.length;
+      if (campaign?.id) {
+        checkAppointments(campaign.id, toast, navigate);
+      }
 
       for (const contact of selectedContacts) {
         try {
-          console.log("Initiating call for contact:", contact);
+          console.log("Processing contact:", contact.name);
           
           const blandAIResponse = await makeBlandAICall({
             phoneNumber: contact.phone,
@@ -258,7 +298,9 @@ const CampaignDeployment = ({
                 console.log("Campaign call updated with appointment details");
 
                 if (appointmentDate) {
-                  setSuccessfulAppointments(prev => prev + 1);
+                  console.log("Appointment scheduled for:", contact.name, appointmentDate);
+                  completedAppointments++;
+                  console.log("Total appointments scheduled:", completedAppointments);
                 }
               }
             } catch (error) {
@@ -271,48 +313,72 @@ const CampaignDeployment = ({
             }
           }, 120000);
 
-          completedCalls++;
-          
-          // Check if this was the last call
-          if (completedCalls === totalCalls && successfulAppointments > 0) {
+        } catch (error) {
+          console.error('Error processing contact:', contact.name, error);
+        }
+      }
+
+      // After all contacts are processed
+      console.log("Campaign deployment completed. Successful appointments:", completedAppointments);
+      
+      if (completedAppointments > 0) {
+        console.log("Showing appointment success notification");
+        toast({
+          title: "New Appointments Scheduled!",
+          description: (
+            <div className="space-y-2">
+              <p>{completedAppointments} new appointment(s) have been scheduled.</p>
+              <div className="flex gap-2 mt-2">
+                <Button 
+                  variant="default"
+                  size="sm"
+                  className="bg-primary text-white hover:bg-primary/90"
+                  onClick={() => {
+                    console.log("Navigating to dashboard");
+                    navigate('/dashboard');
+                  }}
+                >
+                  View Appointments
+                </Button>
+              </div>
+            </div>
+          ),
+          duration: 20000, // 20 seconds
+        });
+      }
+
+      // Add this new block after the contact processing loop
+      setTimeout(() => {
+        // Check final results after all calls have been analyzed
+        const checkResults = async () => {
+          const { data: appointments } = await supabase
+            .from('campaign_calls')
+            .select('*')
+            .eq('campaign_id', campaign.id)
+            .eq('outcome', 'Appointment scheduled');
+
+          if (appointments && appointments.length > 0) {
             toast({
               title: "Appointments Scheduled!",
               description: (
                 <div className="space-y-2">
-                  <p>{successfulAppointments} appointment(s) have been scheduled.</p>
-                  <div className="flex gap-2 mt-2">
-                    <Button 
-                      variant="default"
-                      size="sm"
-                      onClick={() => navigate('/dashboard')}
-                    >
-                      View Dashboard
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate('/calendar')}
-                    >
-                      View Calendar
-                    </Button>
-                  </div>
+                  <p>{appointments.length} new appointments have been scheduled.</p>
+                  <Button 
+                    variant="default"
+                    onClick={() => navigate('/dashboard')}
+                  >
+                    View in Dashboard
+                  </Button>
                 </div>
               ),
-              duration: 15000, // 15 seconds
+              duration: 20000,
             });
           }
+        };
 
-        } catch (error) {
-          console.error('Detailed error for contact:', contact.name, error);
-          toast({
-            title: "Error",
-            description: `Failed to process call for ${contact.name}: ${error.message}`,
-            variant: "destructive",
-          });
-        }
-      }
+        checkResults();
+      }, 125000); // Wait slightly longer than the BlandAI analysis
 
-      // General success toast for campaign completion
       toast({
         title: "Success",
         description: "Campaign deployed successfully!",
@@ -320,7 +386,7 @@ const CampaignDeployment = ({
       
       onDeploymentSuccess(campaignName);
     } catch (error) {
-      console.error('Campaign deployment error:', error);
+      console.error("Campaign deployment error:", error);
       toast({
         title: "Error",
         description: `Failed to deploy campaign: ${error.message}`,

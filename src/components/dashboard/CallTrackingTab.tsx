@@ -8,6 +8,8 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getLeadStageColor } from "@/types/lead";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface CallDetails {
   id: string;
@@ -25,6 +27,7 @@ interface CallDetails {
 
 const CallTrackingTab = () => {
   const [selectedCall, setSelectedCall] = useState<CallDetails | null>(null);
+  const navigate = useNavigate();
 
   const { data: calls, isLoading } = useQuery({
     queryKey: ["campaign-calls"],
@@ -43,20 +46,20 @@ const CallTrackingTab = () => {
 
       if (error) throw error;
       
-      console.log("\n=== DATABASE VERIFICATION ===");
+      // console.log("\n=== DATABASE VERIFICATION ===");
       // Log the first few appointments
       data
         .filter(call => call.appointment_date)
         .slice(0, 3)
         .forEach(call => {
-          console.log("Appointment from DB:", {
-            id: call.id,
-            rawDate: call.appointment_date,
-            parsedLocal: new Date(call.appointment_date).toLocaleString(),
-            parsedUTC: new Date(call.appointment_date).toUTCString()
-          });
+          // console.log("Appointment from DB:", {
+          //   id: call.id,
+          //   rawDate: call.appointment_date,
+          //   parsedLocal: new Date(call.appointment_date).toLocaleString(),
+          //   parsedUTC: new Date(call.appointment_date).toUTCString()
+          // });
         });
-      console.log("============================\n");
+      // console.log("============================\n");
 
       return data;
     },
@@ -110,6 +113,30 @@ const CallTrackingTab = () => {
           </div>
         </div>
 
+        {isRecentCampaignCall(calls?.[0]) && calls?.[0]?.outcome === "Appointment scheduled" && (
+          <div className="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+            <div className="flex justify-between items-center">
+              <div className="space-y-1">
+                <h3 className="font-medium text-green-800">
+                  New Appointments Scheduled!
+                </h3>
+                <p className="text-green-700">
+                  Your recent campaign has scheduled new appointments
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                className="border-green-200 text-green-700 hover:bg-green-100"
+                onClick={() => {
+                  navigate('/dashboard', { state: { defaultTab: 'Call Tracking' }});
+                }}
+              >
+                View Details
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -156,14 +183,14 @@ const CallTrackingTab = () => {
                       <div>
                         {(() => {
                           const date = parseISO(call.appointment_date);
-                          console.log("\n=== FRONTEND DISPLAY VERIFICATION ===");
-                          console.log("Rendering appointment:", {
-                            id: call.id,
-                            rawDate: call.appointment_date,
-                            parsedLocal: date.toLocaleString(),
-                            formattedDisplay: format(date, 'PPp')
-                          });
-                          console.log("===================================\n");
+                          // console.log("\n=== FRONTEND DISPLAY VERIFICATION ===");
+                          // console.log("Rendering appointment:", {
+                          //   id: call.id,
+                          //   rawDate: call.appointment_date,
+                          //   parsedLocal: date.toLocaleString(),
+                          //   formattedDisplay: format(date, 'PPp')
+                          // });
+                          // console.log("===================================\n");
                           return format(date, 'PPp');
                         })()}
                       </div>
