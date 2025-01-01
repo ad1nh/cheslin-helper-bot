@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { PhoneCall, Home, CheckCircle } from "lucide-react";
+import { PhoneCall, Home, CheckCircle, Phone } from "lucide-react";
 import AddContactForm from "./workflow/AddContactForm";
 import ReviewContacts from "./workflow/ReviewContacts";
 import CampaignDeployment from "./workflow/CampaignDeployment";
@@ -21,13 +21,8 @@ const campaignTypes = [
   {
     title: "Solicit Buyers",
     description: "Contact potential buyers to schedule viewings for your listed properties.",
-    icon: PhoneCall,
-  },
-  {
-    title: "Follow Up from Open House",
-    description: "Reach out to open house attendees for feedback",
-    icon: Home,
-  },
+    icon: Phone,
+  }
 ];
 
 const CampaignWorkflow = () => {
@@ -131,168 +126,198 @@ const CampaignWorkflow = () => {
   };
 
   return (
-    <div className="flex gap-8">
-      {/* Steps sidebar */}
-      <div className="w-64 bg-gray-50 p-4 rounded-lg">
-        <div className="space-y-2">
-          {!isDeployed && steps.map((step, index) => (
-            <div
-              key={step}
-              className={cn(
-                "p-3 rounded-lg transition-colors",
-                "flex items-center gap-2",
-                currentStep === index
-                  ? "bg-primary text-white"
-                  : isStepEnabled(index)
-                  ? "text-gray-600 hover:bg-gray-100 cursor-pointer"
-                  : "text-gray-400 bg-gray-100 cursor-not-allowed",
-                isReviewMode && index < currentStep && "border-l-4 border-orange-400"
-              )}
-              onClick={() => handleStepChange(index)}
-            >
-              <span>{step}</span>
-              {isReviewMode && index < currentStep && (
-                <span className="text-[10px] bg-orange-100 text-orange-500 px-1.5 py-0.5 rounded-full">
-                  reviewing
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="container mx-auto px-4 py-8">
 
-      {/* Main content */}
-      <div className="flex-1">
-        {!isDeployed ? (
-          <>
-            {currentStep === 0 && (
-              <div className="space-y-6">
-                <div className="text-center mb-8">
-                  <h2 className="text-2xl font-bold">Choose Campaign Type</h2>
-                  <p className="text-gray-600">
-                    Decide how you want to engage your clients and generate leads.
-                  </p>
-                </div>
-                <div className="grid grid-cols-3 gap-6">
-                  {campaignTypes.map((campaign, index) => (
-                    <Card
-                      key={campaign.title}
-                      className={`p-6 cursor-pointer transition-all ${
-                        selectedCampaignType === campaign.title
-                          ? "ring-2 ring-primary shadow-lg"
-                          : "hover:shadow-lg"
-                      }`}
-                      onClick={() => handleCampaignTypeSelect(campaign.title)}
-                    >
-                      <div className="flex flex-col items-center text-center space-y-4">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                          <campaign.icon className="w-6 h-6 text-primary" />
-                        </div>
-                        <h3 className="font-semibold">{campaign.title}</h3>
-                        <p className="text-sm text-gray-600">{campaign.description}</p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+        <div className="flex gap-8">
+          {/* Wider sidebar */}
+          <div className="w-96 bg-white rounded-xl shadow-sm p-6 h-fit">
+            <div className="mb-6">
+              <div className="h-2 w-full bg-gray-200 rounded-full">
+                <div 
+                  className="h-2 bg-primary rounded-full transition-all"
+                  style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+                />
               </div>
-            )}
-
-            {currentStep === 1 && (
-              <AddContactForm onAddContacts={(contacts) => {
-                setSelectedContacts(contacts);
-                setIsReviewMode(true);
-                setCurrentStep(2);
-              }} />
-            )}
-
-            {currentStep === 2 && (
-              <PropertySelection 
-                onSelect={(propertyId, address) => {
-                  setSelectedPropertyId(propertyId);
-                  setPropertyDetails(address);
-                }}
-                onNext={() => {
-                  setIsReviewMode(true);
-                  setCurrentStep(3);
-                }}
-              />
-            )}
-
-            {currentStep === 3 && (
-              <CampaignDeployment
-                selectedContacts={selectedContacts}
-                selectedCampaignType={selectedCampaignType}
-                propertyDetails={propertyDetails}
-                selectedPropertyId={selectedPropertyId}
-                onPropertyDetailsChange={setPropertyDetails}
-                onDeploymentSuccess={(name) => {
-                  setCampaignName(name);
-                  setIsDeployed(true);
-                }}
-              />
-            )}
-          </>
-        ) : (
-          <div className="max-w-2xl mx-auto text-center space-y-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-semibold">Campaign Deployed Successfully!</h2>
-              <p className="text-muted-foreground mt-2">
-                Your campaign "{campaignName}" is now active
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                Step {currentStep + 1} of {steps.length}
               </p>
             </div>
-            <div className="space-y-4">
-              <Card className="p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Contacts</span>
-                    <span className="font-medium">{selectedContacts.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Property</span>
-                    <span className="font-medium">{propertyDetails}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Campaign Type</span>
-                    <span className="font-medium">{selectedCampaignType}</span>
-                  </div>
-                </div>
-              </Card>
-              <div className="space-x-4">
-                <Button variant="outline" onClick={() => {
-                  // Reset the workflow
-                  setCurrentStep(0);
-                  setSelectedContacts([]);
-                  setSelectedCampaignType("");
-                  setPropertyDetails("");
-                  setSelectedPropertyId("");
-                  setIsDeployed(false);
-                  setIsReviewMode(false);
-                }}>
-                  Start New Campaign
-                </Button>
-                <Button 
-                  variant="default"
-                  onClick={() => {
-                    console.log("1. Button clicked");
-                    console.log("2. Current location:", window.location.pathname);
-                    console.log("3. Attempting navigation with state:", { defaultTab: 'Call Tracking' });
-                    
-                    navigate('/', { 
-                      state: { defaultTab: 'Call Tracking' }
-                    });
-                    
-                    console.log("4. Navigation executed");
-                  }}
+
+            <div className="space-y-3">
+              {!isDeployed && steps.map((step, index) => (
+                <div
+                  key={step}
+                  className={cn(
+                    "relative p-4 rounded-lg transition-all",
+                    "flex items-center justify-between",
+                    currentStep === index
+                      ? "bg-primary text-white"
+                      : isStepEnabled(index)
+                      ? "hover:bg-gray-50 cursor-pointer"
+                      : "opacity-50 cursor-not-allowed",
+                    isReviewMode && index < currentStep && "border-l-4 border-orange-400"
+                  )}
+                  onClick={() => handleStepChange(index)}
                 >
-                  View Campaign Progress
-                </Button>
-              </div>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-sm",
+                      currentStep === index 
+                        ? "bg-white text-primary" 
+                        : "bg-gray-100 text-gray-600"
+                    )}>
+                      {index + 1}
+                    </div>
+                    <span className="font-medium">{step}</span>
+                  </div>
+                  
+                  {isReviewMode && index < currentStep && (
+                    <span className="text-[10px] bg-orange-100 text-orange-500 px-2 py-1 rounded-full whitespace-nowrap">
+                      reviewing
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-        )}
+
+          {/* Main content */}
+          <div className="flex-1">
+            {!isDeployed ? (
+              <>
+                {currentStep === 0 && (
+                  <div className="space-y-8">
+                    <Card
+                      className={cn(
+                        "relative overflow-hidden transition-all duration-300",
+                        "hover:shadow-xl cursor-pointer",
+                        selectedCampaignType === "Solicit Buyers"
+                          ? "ring-2 ring-primary shadow-lg"
+                          : "hover:shadow-lg"
+                      )}
+                      onClick={() => handleCampaignTypeSelect("Solicit Buyers")}
+                    >
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-x-16 -translate-y-16" />
+                      <div className="p-8">
+                        <div className="flex items-center gap-6">
+                          <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Phone className="w-8 h-8 text-primary" />
+                          </div>
+                          <div>
+                            <h2 className="text-2xl font-semibold mb-2">Start Your Campaign</h2>
+                            <p className="text-gray-600">Contact potential buyers to schedule viewings for your listed properties</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {!selectedCampaignType && (
+                      <p className="text-center text-sm text-muted-foreground">
+                        Click the card above to begin your campaign
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {currentStep === 1 && (
+                  <AddContactForm onAddContacts={(contacts) => {
+                    setSelectedContacts(contacts);
+                    setIsReviewMode(true);
+                    setCurrentStep(2);
+                  }} />
+                )}
+
+                {currentStep === 2 && (
+                  <PropertySelection 
+                    onSelect={(propertyId, address) => {
+                      setSelectedPropertyId(propertyId);
+                      setPropertyDetails(address);
+                    }}
+                    onNext={() => {
+                      setIsReviewMode(true);
+                      setCurrentStep(3);
+                    }}
+                  />
+                )}
+
+                {currentStep === 3 && (
+                  <CampaignDeployment
+                    selectedContacts={selectedContacts}
+                    selectedCampaignType={selectedCampaignType}
+                    propertyDetails={propertyDetails}
+                    selectedPropertyId={selectedPropertyId}
+                    onPropertyDetailsChange={setPropertyDetails}
+                    onDeploymentSuccess={(name) => {
+                      setCampaignName(name);
+                      setIsDeployed(true);
+                    }}
+                  />
+                )}
+              </>
+            ) : (
+              <div className="max-w-2xl mx-auto text-center space-y-6">
+                <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-semibold">Campaign Deployed Successfully!</h2>
+                  <p className="text-muted-foreground mt-2">
+                    Your campaign "{campaignName}" is now active
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <Card className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Contacts</span>
+                        <span className="font-medium">{selectedContacts.length}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Property</span>
+                        <span className="font-medium">{propertyDetails}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Campaign Type</span>
+                        <span className="font-medium">{selectedCampaignType}</span>
+                      </div>
+                    </div>
+                  </Card>
+                  <div className="space-x-4">
+                    <Button variant="outline" onClick={() => {
+                      // Reset the workflow
+                      setCurrentStep(0);
+                      setSelectedContacts([]);
+                      setSelectedCampaignType("");
+                      setPropertyDetails("");
+                      setSelectedPropertyId("");
+                      setIsDeployed(false);
+                      setIsReviewMode(false);
+                    }}>
+                      Start New Campaign
+                    </Button>
+                    <Button 
+                      variant="default"
+                      onClick={() => {
+                        console.log("1. Button clicked");
+                        console.log("2. Current location:", window.location.pathname);
+                        console.log("3. Attempting navigation with state:", { defaultTab: 'Call Tracking' });
+                        
+                        navigate('/', { 
+                          state: { defaultTab: 'Call Tracking' }
+                        });
+                        
+                        console.log("4. Navigation executed");
+                      }}
+                    >
+                      View Campaign Progress
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
