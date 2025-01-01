@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { CampaignFAQs } from "./campaign/CampaignFAQs";
 
 const steps = [
   "Launch Campaign Type",
@@ -317,6 +318,11 @@ const CampaignWorkflow = () => {
           </div>
         </div>
       </div>
+      {!isDeployed && (
+  <div className="mt-8">
+    <CampaignFAQs />
+  </div>
+)}
     </div>
   );
 };
