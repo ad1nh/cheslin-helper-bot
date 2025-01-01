@@ -129,6 +129,16 @@ const CampaignWorkflow = () => {
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-[2000px] mx-auto px-4 py-8">
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold mb-3">
+            Welcome to Campaign Creation
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl">
+            Launch powerful AI-powered calling campaigns to connect with potential buyers. 
+            Our intelligent system handles the calls while you focus on closing deals.
+          </p>
+        </div>
+
         <div className="flex gap-12">
           {/* Wider sidebar */}
           <div className="w-96 bg-white rounded-xl shadow-sm p-6 h-fit">
