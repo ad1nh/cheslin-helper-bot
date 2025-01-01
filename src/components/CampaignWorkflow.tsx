@@ -127,9 +127,8 @@ const CampaignWorkflow = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="container mx-auto px-4 py-8">
-
-        <div className="flex gap-8">
+      <div className="max-w-[2000px] mx-auto px-4 py-8">
+        <div className="flex gap-12">
           {/* Wider sidebar */}
           <div className="w-96 bg-white rounded-xl shadow-sm p-6 h-fit">
             <div className="mb-6">
@@ -182,12 +181,12 @@ const CampaignWorkflow = () => {
             </div>
           </div>
 
-          {/* Main content */}
-          <div className="flex-1">
+          {/* Main content area - now with more width */}
+          <div className="flex-1 min-w-0">
             {!isDeployed ? (
               <>
                 {currentStep === 0 && (
-                  <div className="space-y-8">
+                  <div className="space-y-4">
                     <Card
                       className={cn(
                         "relative overflow-hidden transition-all duration-300",
@@ -198,22 +197,21 @@ const CampaignWorkflow = () => {
                       )}
                       onClick={() => handleCampaignTypeSelect("Solicit Buyers")}
                     >
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-x-16 -translate-y-16" />
                       <div className="p-8">
-                        <div className="flex items-center gap-6">
-                          <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Phone className="w-8 h-8 text-primary" />
+                        <div className="flex items-center gap-8">
+                          <div className="w-20 h-20 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Phone className="w-10 h-10 text-primary" />
                           </div>
-                          <div>
-                            <h2 className="text-2xl font-semibold mb-2">Start Your Campaign</h2>
-                            <p className="text-gray-600">Contact potential buyers to schedule viewings for your listed properties</p>
+                          <div className="flex-1">
+                            <h2 className="text-3xl font-semibold mb-3">Start Your Campaign</h2>
+                            <p className="text-gray-600 text-lg">Contact potential buyers to schedule viewings for your listed properties</p>
                           </div>
                         </div>
                       </div>
                     </Card>
 
                     {!selectedCampaignType && (
-                      <p className="text-center text-sm text-muted-foreground">
+                      <p className="text-center text-sm text-muted-foreground mt-4">
                         Click the card above to begin your campaign
                       </p>
                     )}
