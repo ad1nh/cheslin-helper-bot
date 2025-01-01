@@ -129,72 +129,126 @@ const CampaignWorkflow = () => {
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="max-w-[2000px] mx-auto px-4 py-8">
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-3">
-            Welcome to Campaign Creation
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-3xl">
-            Launch powerful AI-powered calling campaigns to connect with potential buyers. 
-            Our intelligent system handles the calls while you focus on closing deals.
-          </p>
-        </div>
-
-        <div className="flex gap-12">
-          {/* Wider sidebar */}
-          <div className="w-96 bg-white rounded-xl shadow-sm p-6 h-fit">
-            <div className="mb-6">
-              <div className="h-2 w-full bg-gray-200 rounded-full">
-                <div 
-                  className="h-2 bg-primary rounded-full transition-all"
-                  style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
-                />
-              </div>
-              <p className="text-sm text-gray-500 mt-2 text-center">
-                Step {currentStep + 1} of {steps.length}
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {!isDeployed && steps.map((step, index) => (
-                <div
-                  key={step}
-                  className={cn(
-                    "relative p-4 rounded-lg transition-all",
-                    "flex items-center justify-between",
-                    currentStep === index
-                      ? "bg-primary text-white"
-                      : isStepEnabled(index)
-                      ? "hover:bg-gray-50 cursor-pointer"
-                      : "opacity-50 cursor-not-allowed",
-                    isReviewMode && index < currentStep && "border-l-4 border-orange-400"
-                  )}
-                  onClick={() => handleStepChange(index)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-sm",
-                      currentStep === index 
-                        ? "bg-white text-primary" 
-                        : "bg-gray-100 text-gray-600"
-                    )}>
-                      {index + 1}
-                    </div>
-                    <span className="font-medium">{step}</span>
-                  </div>
-                  
-                  {isReviewMode && index < currentStep && (
-                    <span className="text-[10px] bg-orange-100 text-orange-500 px-2 py-1 rounded-full whitespace-nowrap">
-                      reviewing
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
+        {!isDeployed && (
+          <div className="mb-12">
+            <h1 className="text-4xl font-bold mb-3">
+              Welcome to Campaign Creation
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-3xl">
+              Launch powerful AI-powered calling campaigns to connect with potential buyers. 
+              Our intelligent system handles the calls while you focus on closing deals.
+            </p>
           </div>
+        )}
 
-          {/* Main content area - now with more width */}
-          <div className="flex-1 min-w-0">
-            {!isDeployed ? (
+        <div className={cn(
+          "flex gap-12",
+          isDeployed && "justify-center" // Center content when deployed
+        )}>
+          {!isDeployed && (
+            <div className="w-80 hidden lg:block">
+              <Card className="p-6">
+                <div className="space-y-4">
+                  {steps.map((step, index) => (
+                    <div
+                      key={step}
+                      className={cn(
+                        "relative p-4 rounded-lg transition-all",
+                        "flex items-center justify-between",
+                        currentStep === index
+                          ? "bg-primary text-white"
+                          : isStepEnabled(index)
+                          ? "hover:bg-gray-50 cursor-pointer"
+                          : "opacity-50 cursor-not-allowed",
+                        isReviewMode && index < currentStep && "border-l-4 border-orange-400"
+                      )}
+                      onClick={() => handleStepChange(index)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-sm",
+                          currentStep === index 
+                            ? "bg-white text-primary" 
+                            : "bg-gray-100 text-gray-600"
+                        )}>
+                          {index + 1}
+                        </div>
+                        <span className="font-medium">{step}</span>
+                      </div>
+                      
+                      {isReviewMode && index < currentStep && (
+                        <span className="text-[10px] bg-orange-100 text-orange-500 px-2 py-1 rounded-full whitespace-nowrap">
+                          reviewing
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
+          <div className={cn(
+            "flex-1",
+            isDeployed && "max-w-3xl w-full" // Limit width when deployed
+          )}>
+            {isDeployed ? (
+              <div className="text-center space-y-8 p-12">
+                <div className="w-24 h-24 bg-green-100 rounded-full mx-auto flex items-center justify-center">
+                  <CheckCircle className="w-12 h-12 text-green-600" />
+                </div>
+                <div className="space-y-4">
+                  <h2 className="text-4xl font-bold text-gray-900">Campaign Deployed Successfully!</h2>
+                  <p className="text-xl text-muted-foreground">
+                    Your campaign "{campaignName}" is now active
+                  </p>
+                </div>
+                <Card className="p-8 my-8">
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center border-b pb-4">
+                      <span className="text-lg text-muted-foreground">Contacts</span>
+                      <span className="text-2xl font-semibold">{selectedContacts.length}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-b pb-4">
+                      <span className="text-lg text-muted-foreground">Property</span>
+                      <span className="text-2xl font-semibold">{propertyDetails}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg text-muted-foreground">Campaign Type</span>
+                      <span className="text-2xl font-semibold">{selectedCampaignType}</span>
+                    </div>
+                  </div>
+                </Card>
+                <div className="space-x-6">
+                  <Button 
+                    size="lg"
+                    variant="outline" 
+                    onClick={() => {
+                      setCurrentStep(0);
+                      setSelectedContacts([]);
+                      setSelectedCampaignType("");
+                      setPropertyDetails("");
+                      setSelectedPropertyId("");
+                      setIsDeployed(false);
+                      setIsReviewMode(false);
+                    }}
+                  >
+                    Start New Campaign
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="default"
+                    onClick={() => {
+                      navigate('/', { 
+                        state: { defaultTab: 'Call Tracking' }
+                      });
+                    }}
+                  >
+                    View Campaign Progress
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <>
                 {currentStep === 0 && (
                   <div className="space-y-4">
@@ -264,66 +318,6 @@ const CampaignWorkflow = () => {
                   />
                 )}
               </>
-            ) : (
-              <div className="max-w-2xl mx-auto text-center space-y-6">
-                <div className="w-16 h-16 bg-green-100 rounded-full mx-auto flex items-center justify-center">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-semibold">Campaign Deployed Successfully!</h2>
-                  <p className="text-muted-foreground mt-2">
-                    Your campaign "{campaignName}" is now active
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <Card className="p-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Contacts</span>
-                        <span className="font-medium">{selectedContacts.length}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Property</span>
-                        <span className="font-medium">{propertyDetails}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Campaign Type</span>
-                        <span className="font-medium">{selectedCampaignType}</span>
-                      </div>
-                    </div>
-                  </Card>
-                  <div className="space-x-4">
-                    <Button variant="outline" onClick={() => {
-                      // Reset the workflow
-                      setCurrentStep(0);
-                      setSelectedContacts([]);
-                      setSelectedCampaignType("");
-                      setPropertyDetails("");
-                      setSelectedPropertyId("");
-                      setIsDeployed(false);
-                      setIsReviewMode(false);
-                    }}>
-                      Start New Campaign
-                    </Button>
-                    <Button 
-                      variant="default"
-                      onClick={() => {
-                        console.log("1. Button clicked");
-                        console.log("2. Current location:", window.location.pathname);
-                        console.log("3. Attempting navigation with state:", { defaultTab: 'Call Tracking' });
-                        
-                        navigate('/', { 
-                          state: { defaultTab: 'Call Tracking' }
-                        });
-                        
-                        console.log("4. Navigation executed");
-                      }}
-                    >
-                      View Campaign Progress
-                    </Button>
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>
