@@ -12,6 +12,7 @@ import ClientDatabase from "./ClientDatabase";
 import PropertyDatabase from "./PropertyDatabase";
 import CallTrackingTab from "./dashboard/CallTrackingTab";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const location = useLocation();
@@ -47,66 +48,62 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-4xl font-bold text-primary mb-2">Welcome to Cheslin</h1>
-          <p className="text-secondary">Your AI-powered real estate assistant</p>
+    <>
+      <div className="w-full border-b bg-white/75 backdrop-blur-md sticky top-0 z-50">
+        <div className="max-w-[2000px] mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-bold text-primary">Cheslin</h1>
+            
+            <nav className="flex-1 px-8">
+              <div className="flex items-center justify-start gap-1">
+                {[
+                  'Campaigns',
+                  'Call Tracking',
+                  'Dashboard',
+                  'Lead Management',
+                  'Viewing Schedule',
+                  'Calendar',
+                  'Client Database',
+                  'Property Database',
+                ].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => handleTabChange(tab)}
+                    className={cn(
+                      "px-4 h-14 relative transition-colors",
+                      "hover:text-primary",
+                      "text-sm font-medium",
+                      activeTab === tab ? [
+                        "text-primary",
+                        "after:absolute after:bottom-0 after:left-0 after:right-0",
+                        "after:h-0.5 after:bg-primary after:rounded-full"
+                      ] : "text-muted-foreground"
+                    )}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </nav>
+
+            <Button variant="outline" onClick={handleLogout}>
+              Sign Out
+            </Button>
+          </div>
         </div>
-        <Button variant="outline" onClick={handleLogout}>
-          Sign Out
-        </Button>
       </div>
 
-      <Tabs 
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="space-y-4"
-      >
-        <TabsList>
-          <TabsTrigger value="Campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="Call Tracking">Call Tracking</TabsTrigger>
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="leads">Lead Management</TabsTrigger>
-          <TabsTrigger value="viewings">Viewing Schedule</TabsTrigger>
-          <TabsTrigger value="calendar">Calendar</TabsTrigger>
-          <TabsTrigger value="clients">Client Database</TabsTrigger>
-          <TabsTrigger value="properties">Property Database</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="Campaigns">
-          <CampaignWorkflow />
-        </TabsContent>
-
-        <TabsContent value="Call Tracking">
-          <CallTrackingTab />
-        </TabsContent>
-
-        <TabsContent value="dashboard">
-          <CampaignDashboard />
-        </TabsContent>
-
-        <TabsContent value="leads">
-          <LeadManagement />
-        </TabsContent>
-
-        <TabsContent value="viewings">
-          <ViewingSchedule />
-        </TabsContent>
-
-        <TabsContent value="calendar">
-          <CalendarView />
-        </TabsContent>
-
-        <TabsContent value="clients">
-          <ClientDatabase />
-        </TabsContent>
-
-        <TabsContent value="properties">
-          <PropertyDatabase />
-        </TabsContent>
-      </Tabs>
-    </div>
+      <div className="max-w-[2000px] mx-auto px-4 py-8">
+        {activeTab === "Campaigns" && <CampaignWorkflow />}
+        {activeTab === "Call Tracking" && <CallTrackingTab />}
+        {activeTab === "Dashboard" && <CampaignDashboard />}
+        {activeTab === "Lead Management" && <LeadManagement />}
+        {activeTab === "Viewing Schedule" && <ViewingSchedule />}
+        {activeTab === "Calendar" && <CalendarView />}
+        {activeTab === "Client Database" && <ClientDatabase />}
+        {activeTab === "Property Database" && <PropertyDatabase />}
+      </div>
+    </>
   );
 };
 
