@@ -133,7 +133,7 @@ const CallTrackingTab = () => {
                   console.log("3. Attempting navigation with state:", { defaultTab: 'dashboard' });
                   
                   navigate('/', { 
-                    state: { defaultTab: 'dashboard' }
+                    state: { defaultTab: 'Dashboard' }
                   });
                   
                   console.log("4. Navigation executed");
