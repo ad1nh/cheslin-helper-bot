@@ -55,7 +55,7 @@ const Dashboard = () => {
             <h1 className="text-xl font-bold text-primary">Cheslin</h1>
             
             <nav className="flex-1 px-8">
-              <div className="flex items-center justify-start gap-1">
+              <div className="flex items-center justify-start gap-2">
                 {[
                   'Campaigns',
                   'Call Tracking',
@@ -72,7 +72,7 @@ const Dashboard = () => {
                     className={cn(
                       "px-4 h-14 relative transition-colors",
                       "hover:text-primary",
-                      "text-sm font-medium",
+                      "text-base font-medium",
                       activeTab === tab ? [
                         "text-primary",
                         "after:absolute after:bottom-0 after:left-0 after:right-0",
